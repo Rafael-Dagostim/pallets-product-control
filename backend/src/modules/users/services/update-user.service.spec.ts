@@ -1,4 +1,5 @@
 import { Test } from '@nestjs/testing';
+import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '@core/database/database.service';
 import { ObjectNotFoundException } from '@shared/exceptions/object-not-found.exception';
@@ -8,24 +9,23 @@ import { UpdateUserService } from './update-user.service';
 describe('UpdateUserService', () => {
   let service: UpdateUserService;
   let prisma: MockPrismaService;
-  const originalEnv = process.env.PWD_PEPPER;
+  const pepper = 'test-pepper';
 
   beforeEach(async () => {
-    process.env.PWD_PEPPER = 'test-pepper';
     prisma = createMockPrismaService();
     const module = await Test.createTestingModule({
       providers: [
         UpdateUserService,
         { provide: PrismaService, useValue: prisma },
+        {
+          provide: ConfigService,
+          useValue: { get: jest.fn().mockReturnValue(pepper) },
+        },
       ],
     }).compile();
 
     service = module.get(UpdateUserService);
     jest.clearAllMocks();
-  });
-
-  afterEach(() => {
-    process.env.PWD_PEPPER = originalEnv;
   });
 
   it('should update user without re-hashing when no password change', async () => {
@@ -56,7 +56,7 @@ describe('UpdateUserService', () => {
 
     const callData = prisma.user.update.mock.calls[0][0].data;
     expect(callData.salt).toBeDefined();
-    const isValid = await bcrypt.compare('newpass' + 'test-pepper', callData.password as string);
+    const isValid = await bcrypt.compare('newpass' + pepper, callData.password as string);
     expect(isValid).toBe(true);
   });
 

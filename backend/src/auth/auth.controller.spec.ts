@@ -4,10 +4,10 @@ import { AuthService } from './auth.service';
 
 describe('AuthController', () => {
   let controller: AuthController;
-  let authService: { login: jest.Mock };
+  let authService: { login: jest.Mock; refreshToken: jest.Mock };
 
   beforeEach(async () => {
-    authService = { login: jest.fn() };
+    authService = { login: jest.fn(), refreshToken: jest.fn() };
 
     const module = await Test.createTestingModule({
       controllers: [AuthController],
@@ -26,6 +26,17 @@ describe('AuthController', () => {
     const result = await controller.login(dto);
 
     expect(authService.login).toHaveBeenCalledWith(dto);
+    expect(result).toBe(expected);
+  });
+
+  it('should delegate refresh to AuthService', async () => {
+    const dto = { token: 'refresh-token' };
+    const expected = { token: 'new-jwt', refresh: 'new-refresh' };
+    authService.refreshToken.mockResolvedValue(expected);
+
+    const result = await controller.refresh(dto);
+
+    expect(authService.refreshToken).toHaveBeenCalledWith(dto);
     expect(result).toBe(expected);
   });
 });

@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '@core/database/database.service';
 import { ObjectNotFoundException } from '@shared/exceptions/object-not-found.exception';
@@ -7,7 +8,10 @@ import { UserEntity } from '../entities/user.entity';
 
 @Injectable()
 export class UpdateUserService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly configService: ConfigService,
+  ) {}
 
   async execute(id: string, dto: UpdateUserDto): Promise<UserEntity> {
     const existing = await this.prisma.user.findFirst({
@@ -22,7 +26,7 @@ export class UpdateUserService {
 
     if (dto.password) {
       const salt = await bcrypt.genSalt();
-      const pepper = process.env.PWD_PEPPER || '';
+      const pepper = this.configService.get<string>('PWD_PEPPER', '');
       data.password = await bcrypt.hash(dto.password + pepper, salt);
       data.salt = salt;
     }

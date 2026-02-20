@@ -1,4 +1,5 @@
 import { Test } from '@nestjs/testing';
+import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '@core/database/database.service';
 import { createMockPrismaService, MockPrismaService } from '../../../__mocks__/prisma.mock';
@@ -7,24 +8,23 @@ import { CreateUserService } from './create-user.service';
 describe('CreateUserService', () => {
   let service: CreateUserService;
   let prisma: MockPrismaService;
-  const originalEnv = process.env.PWD_PEPPER;
+  const pepper = 'test-pepper';
 
   beforeEach(async () => {
-    process.env.PWD_PEPPER = 'test-pepper';
     prisma = createMockPrismaService();
     const module = await Test.createTestingModule({
       providers: [
         CreateUserService,
         { provide: PrismaService, useValue: prisma },
+        {
+          provide: ConfigService,
+          useValue: { get: jest.fn().mockReturnValue(pepper) },
+        },
       ],
     }).compile();
 
     service = module.get(CreateUserService);
     jest.clearAllMocks();
-  });
-
-  afterEach(() => {
-    process.env.PWD_PEPPER = originalEnv;
   });
 
   it('should hash password with pepper and create user', async () => {
@@ -44,7 +44,7 @@ describe('CreateUserService', () => {
     expect(callData.salt).toBeDefined();
     expect(callData.password).not.toBe('secret');
 
-    const isValid = await bcrypt.compare('secret' + 'test-pepper', callData.password);
+    const isValid = await bcrypt.compare('secret' + pepper, callData.password);
     expect(isValid).toBe(true);
     expect(result.id).toBe('u-1');
   });
