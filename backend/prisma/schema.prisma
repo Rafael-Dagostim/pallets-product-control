@@ -1,0 +1,129 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String    @id @default(uuid())
+  name      String    @unique() @db.VarChar(100)
+  document  String    @unique() @db.VarChar(20)
+  password  String
+  salt      String
+  role      UserRole
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz()
+
+  productionHistories ProductionHistory[]
+
+  @@map("users")
+}
+
+model Pallet {
+  id             String    @id @default(uuid())
+  name           String    @db.VarChar(100)
+  version        Int       @default(1)
+  versionFromId  String?   @map("version_from_id")
+  buyCost        Decimal   @map("buy_cost") @db.Money()
+  productionCost Decimal   @map("production_cost") @db.Money()
+  sellPrice      Decimal   @map("sell_price") @db.Money()
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
+  deletedAt      DateTime? @map("deleted_at") @db.Timestamptz()
+
+  versionFrom Pallet?  @relation("PalletVersions", fields: [versionFromId], references: [id])
+  versions    Pallet[] @relation("PalletVersions")
+
+  productionHistories ProductionHistory[]
+  orderItems          OrderItem[]
+
+  @@unique([name, version])
+  @@map("pallets")
+}
+
+model ProductionHistory {
+  id                String           @id @default(uuid())
+  userId            String           @map("user_id")
+  palletId          String           @map("pallet_id")
+  deliveredQuantity Int              @map("delivered_quantity")
+  reformedQuantity  Int              @default(0) @map("reformed_quantity")
+  status            ProductionStatus
+  observation       String?
+  createdAt         DateTime         @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt         DateTime         @updatedAt @map("updated_at") @db.Timestamptz()
+  deletedAt         DateTime?        @map("deleted_at") @db.Timestamptz()
+
+  user   User   @relation(fields: [userId], references: [id])
+  pallet Pallet @relation(fields: [palletId], references: [id])
+
+  @@map("production_histories")
+}
+
+model Customer {
+  id            String    @id @default(uuid())
+  businessName  String    @map("business_name")
+  corporateName String?   @map("corporate_name")
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
+  deletedAt     DateTime? @map("deleted_at") @db.Timestamptz()
+
+  orders Order[]
+
+  @@map("customers")
+}
+
+model Order {
+  id         String      @id @default(uuid())
+  customerId String      @map("customer_id")
+  status     OrderStatus
+  deadline   DateTime    @db.Date()
+  createdAt  DateTime    @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt  DateTime    @updatedAt @map("updated_at") @db.Timestamptz()
+  deletedAt  DateTime?   @map("deleted_at") @db.Timestamptz()
+
+  customer Customer    @relation(fields: [customerId], references: [id])
+  items    OrderItem[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id                String    @id @default(uuid())
+  orderId           String    @map("order_id")
+  palletId          String    @map("pallet_id")
+  quantityRequested Int       @map("quantity_requested")
+  quantityProduced  Int       @default(0) @map("quantity_produced")
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt         DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
+  deletedAt         DateTime? @map("deleted_at") @db.Timestamptz()
+
+  order  Order  @relation(fields: [orderId], references: [id])
+  pallet Pallet @relation(fields: [palletId], references: [id])
+
+  @@map("order_items")
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  EMPLOYEE
+}
+
+enum ProductionStatus {
+  OPEN
+  REFORMED
+  CANCELED
+  PAID
+}
+
+enum OrderStatus {
+  OPEN
+  IN_PRODUCTION
+  DONE
+  CANCELED
+}
