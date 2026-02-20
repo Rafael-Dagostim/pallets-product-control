@@ -189,3 +189,21 @@ Colors (from original project):
 - Font: Lato
 
 Swagger docs available at `/docs` when API is running.
+
+## Testing
+
+### Mandatory Test Maintenance
+Whenever backend code is added or modified (new service, controller, guard, exception, or changes to existing ones), **always check if tests need to be created or updated**:
+- **New service/controller/guard**: Create a corresponding `.spec.ts` file following existing patterns.
+- **Modified service/controller logic**: Update the existing `.spec.ts` to cover the new/changed behavior.
+- **Run `pnpm run test` in `backend/`** after any code change to verify all tests still pass.
+
+### Test Conventions
+- Test files live alongside source files as `<name>.spec.ts`
+- Shared PrismaService mock: `src/__mocks__/prisma.mock.ts`
+- Use `@nestjs/testing` `Test.createTestingModule` for DI setup
+- Use real `bcrypt` (not mocked) for password-related tests
+- All service tests must verify soft delete filtering (`deletedAt: null`)
+- All "not found" paths must verify `ObjectNotFoundException` is thrown
+- Controller tests verify delegation to the correct service with correct args
+- Call `jest.clearAllMocks()` in `beforeEach`
