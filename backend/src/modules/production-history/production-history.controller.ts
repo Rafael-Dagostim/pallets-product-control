@@ -9,7 +9,8 @@ import {
   ParseUUIDPipe,
 } from '@nestjs/common';
 import { ApiBearerAuth } from '@nestjs/swagger';
-import { User } from '@shared/decorators';
+import { UserRole } from '@generated/prisma';
+import { Roles, User } from '@shared/decorators';
 import { CreateProductionHistoryDto } from './dto/create-production-history.dto';
 import { UpdateProductionHistoryDto } from './dto/update-production-history.dto';
 import {
@@ -40,6 +41,7 @@ export class ProductionHistoryController {
   }
 
   @Get()
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
   findAll() {
     return this.findAllProductionHistories.execute();
   }
@@ -50,6 +52,7 @@ export class ProductionHistoryController {
   }
 
   @Patch(':id')
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateProductionHistoryDto,
@@ -58,6 +61,7 @@ export class ProductionHistoryController {
   }
 
   @Delete(':id')
+  @Roles(UserRole.ADMIN)
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.removeProductionHistory.execute(id);
   }

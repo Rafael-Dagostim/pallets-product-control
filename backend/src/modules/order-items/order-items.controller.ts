@@ -9,6 +9,8 @@ import {
   ParseUUIDPipe,
 } from '@nestjs/common';
 import { ApiBearerAuth } from '@nestjs/swagger';
+import { UserRole } from '@generated/prisma';
+import { Roles } from '@shared/decorators';
 import { CreateOrderItemDto } from './dto/create-order-item.dto';
 import { UpdateOrderItemDto } from './dto/update-order-item.dto';
 import {
@@ -21,6 +23,7 @@ import {
 
 @Controller('order-items')
 @ApiBearerAuth()
+@Roles(UserRole.ADMIN, UserRole.MANAGER)
 export class OrderItemsController {
   constructor(
     private readonly createOrderItem: CreateOrderItemService,

@@ -9,6 +9,8 @@ import {
   ParseUUIDPipe,
 } from '@nestjs/common';
 import { ApiBearerAuth } from '@nestjs/swagger';
+import { UserRole } from '@generated/prisma';
+import { Roles } from '@shared/decorators';
 import { CreatePalletDto } from './dto/create-pallet.dto';
 import { UpdatePalletDto } from './dto/update-pallet.dto';
 import {
@@ -31,6 +33,7 @@ export class PalletsController {
   ) {}
 
   @Post()
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
   create(@Body() dto: CreatePalletDto) {
     return this.createPallet.execute(dto);
   }
@@ -46,6 +49,7 @@ export class PalletsController {
   }
 
   @Patch(':id')
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdatePalletDto,
@@ -54,6 +58,7 @@ export class PalletsController {
   }
 
   @Delete(':id')
+  @Roles(UserRole.ADMIN)
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.removePallet.execute(id);
   }
