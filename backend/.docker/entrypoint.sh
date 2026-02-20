@@ -6,7 +6,7 @@ fi
 
 pnpm install
 
-pnpm exec prisma migrate dev
+pnpm exec prisma migrate dev --name init
 pnpm exec prisma generate
 
 pnpm run start:dev
