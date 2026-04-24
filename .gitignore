@@ -32,3 +32,7 @@ backend/prisma/migrations/**/migration_lock.toml
 *.log
 npm-debug.log*
 pnpm-debug.log*
+.pnpm-store
+
+# Claude Code
+.claude/
