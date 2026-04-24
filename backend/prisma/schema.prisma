@@ -116,7 +116,7 @@ enum UserRole {
 
 enum ProductionStatus {
   OPEN
-  REFORMED
+  VERIFIED
   CANCELED
   PAID
 }

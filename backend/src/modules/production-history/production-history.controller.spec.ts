@@ -1,4 +1,5 @@
 import { Test } from '@nestjs/testing';
+import { UserRole } from '@generated/prisma';
 import { ProductionHistoryController } from './production-history.controller';
 import {
   CreateProductionHistoryService,
@@ -40,32 +41,32 @@ describe('ProductionHistoryController', () => {
     jest.clearAllMocks();
   });
 
-  it('should delegate create with dto and userId', async () => {
-    const dto = { palletId: 'p-1', deliveredQuantity: 10 } as any;
-    const userId = 'user-1';
+  it('delegates create', async () => {
+    const dto = { userId: 'emp-1', palletId: 'p-1', deliveredQuantity: 10 } as any;
     createPH.execute.mockResolvedValue({ id: '1' });
-    expect(await controller.create(dto, userId)).toEqual({ id: '1' });
-    expect(createPH.execute).toHaveBeenCalledWith(dto, userId);
+    expect(await controller.create(dto)).toEqual({ id: '1' });
+    expect(createPH.execute).toHaveBeenCalledWith(dto);
   });
 
-  it('should delegate findAll', async () => {
+  it('delegates findAll with date query', async () => {
     findAllPH.execute.mockResolvedValue([]);
-    expect(await controller.findAll()).toEqual([]);
+    await controller.findAll('user-1', UserRole.ADMIN, '2026-04-24');
+    expect(findAllPH.execute).toHaveBeenCalledWith('user-1', UserRole.ADMIN, '2026-04-24');
   });
 
-  it('should delegate findOne', async () => {
+  it('delegates findOne', async () => {
     findOnePH.execute.mockResolvedValue({ id: '1' });
     expect(await controller.findOne('1')).toEqual({ id: '1' });
   });
 
-  it('should delegate update', async () => {
-    const dto = { status: 'REFORMED' } as any;
+  it('delegates update with role', async () => {
+    const dto = { status: 'VERIFIED', reformedQuantity: 5 } as any;
     updatePH.execute.mockResolvedValue({ id: '1' });
-    expect(await controller.update('1', dto)).toEqual({ id: '1' });
-    expect(updatePH.execute).toHaveBeenCalledWith('1', dto);
+    await controller.update('1', dto, UserRole.ADMIN);
+    expect(updatePH.execute).toHaveBeenCalledWith('1', dto, UserRole.ADMIN);
   });
 
-  it('should delegate remove', async () => {
+  it('delegates remove', async () => {
     removePH.execute.mockResolvedValue(undefined);
     await controller.remove('1');
     expect(removePH.execute).toHaveBeenCalledWith('1');
