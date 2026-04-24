@@ -8,5 +8,6 @@ pnpm install
 
 pnpm exec prisma migrate dev --name init
 pnpm exec prisma generate
+pnpm exec prisma db seed
 
 pnpm run start:dev
