@@ -14,7 +14,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { PalletLogo } from "@/components/shared/pallet-logo";
+import { BrandMark } from "@/components/shared/brand-mark";
 import {
   Sheet,
   SheetContent,
@@ -49,17 +49,9 @@ export function Navbar() {
       <nav className="hidden md:flex fixed left-0 top-0 bottom-0 w-72 bg-secondary z-40 flex-col">
         <Link
           href="/production"
-          className="flex items-center gap-3 px-5 py-7 border-b border-white/15 overflow-hidden"
+          className="px-5 py-7 border-b border-white/15 overflow-hidden"
         >
-          <PalletLogo className="h-10 w-auto max-w-[100px] shrink-0" variant="icon" />
-          <div className="flex flex-col leading-none min-w-0">
-            <span className="text-primary text-3xl font-black tracking-wide">
-              PALETES
-            </span>
-            <span className="text-primary/50 text-base tracking-widest font-medium">
-              Maracajá
-            </span>
-          </div>
+          <BrandMark />
         </Link>
 
         <div className="flex-1 flex flex-col gap-1 px-3 py-4">

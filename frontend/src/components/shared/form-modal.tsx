@@ -1,35 +1,107 @@
 "use client";
 
-import { X } from "lucide-react";
+import * as React from "react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogClose,
 } from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
+
+type Size = "sm" | "md" | "lg" | "xl";
 
 interface FormModalProps {
   title: string;
+  description?: string;
   open: boolean;
   onClose: () => void;
   children: React.ReactNode;
+  size?: Size;
+  /**
+   * On mobile, switch to a bottom sheet. Defaults to true.
+   */
+  mobileSheet?: boolean;
 }
 
-export function FormModal({ title, open, onClose, children }: FormModalProps) {
+const SIZE_TO_CLASS: Record<Size, string> = {
+  sm: "sm:max-w-sm",
+  md: "sm:max-w-md",
+  lg: "sm:max-w-lg",
+  xl: "sm:max-w-2xl",
+};
+
+export function FormModal({
+  title,
+  description,
+  open,
+  onClose,
+  children,
+  size = "md",
+  mobileSheet = true,
+}: FormModalProps) {
+  const [isMobile, setIsMobile] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!mobileSheet) return;
+    const mq = window.matchMedia("(max-width: 640px)");
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, [mobileSheet]);
+
+  if (mobileSheet && isMobile) {
+    return (
+      <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
+        <SheetContent
+          side="bottom"
+          className="max-h-[92vh] rounded-t-2xl p-0 gap-0 flex flex-col"
+        >
+          <SheetHeader className="px-5 pt-5 pb-3 border-b border-border/40 text-left">
+            <SheetTitle className="text-lg font-semibold">{title}</SheetTitle>
+            {description && (
+              <SheetDescription className="text-sm text-muted-foreground">
+                {description}
+              </SheetDescription>
+            )}
+          </SheetHeader>
+          <ScrollArea className="flex-1 min-h-0">
+            <div className="px-5 py-5">{children}</div>
+          </ScrollArea>
+        </SheetContent>
+      </Sheet>
+    );
+  }
+
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent showCloseButton={false} className="bg-card border-2 border-border rounded-lg max-w-md mx-4 md:mx-auto p-0 gap-0 overflow-hidden">
-        <DialogHeader className="bg-secondary px-6 py-4 relative">
-          <DialogTitle className="text-xl font-bold uppercase tracking-wide text-white">
-            {title}
-          </DialogTitle>
-          <DialogClose className="absolute right-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white transition-opacity">
-            <X className="size-5" />
-            <span className="sr-only">Fechar</span>
-          </DialogClose>
+      <DialogContent
+        className={cn(
+          "p-0 gap-0 overflow-hidden max-h-[90vh] flex flex-col",
+          SIZE_TO_CLASS[size],
+        )}
+      >
+        <DialogHeader className="px-6 pt-5 pb-3 border-b border-border/40 text-left">
+          <DialogTitle className="text-lg font-semibold">{title}</DialogTitle>
+          {description && (
+            <DialogDescription className="text-sm text-muted-foreground">
+              {description}
+            </DialogDescription>
+          )}
         </DialogHeader>
-        <div className="space-y-6 px-6 py-6">{children}</div>
+        <ScrollArea className="flex-1 min-h-0">
+          <div className="px-6 py-5">{children}</div>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );

@@ -14,8 +14,10 @@ export default function DashboardLayout({
       <div className="min-h-screen flex flex-col">
         <Navbar />
         <Header />
-        <main className="flex-1 w-full px-4 md:px-8 pt-4 md:pt-8 pb-20 md:pb-8 md:ml-72 md:w-[calc(100%-18rem)] overflow-x-hidden">
-          {children}
+        <main className="h-[100svh] w-full pb-18 md:pb-0 md:ml-72 md:w-[calc(100%-18rem)] overflow-hidden flex flex-col">
+          <div className="mx-auto w-full max-w-6xl h-full px-4 md:px-8 pt-4 md:pt-8 pb-4 md:pb-8 overflow-y-auto">
+            {children}
+          </div>
         </main>
       </div>
     </AuthProvider>

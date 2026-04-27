@@ -1,13 +1,32 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { toast } from "sonner";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { PageHeader } from "@/components/shared/page-header";
 import { KanbanBoard, type KanbanColumnDef } from "@/components/shared/kanban-board";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { DetailModal } from "@/components/shared/detail-modal";
 import { FormModal } from "@/components/shared/form-modal";
-import { UnderlineInput } from "@/components/shared/underline-input";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
+  ComboboxField,
+  DatePickerField,
+  IntegerInput,
+} from "@/components/shared/form-fields";
 import {
   productionHistoryService,
   type ProductionHistory,
@@ -47,13 +66,23 @@ const ADVANCE_LABEL: Partial<Record<ProductionStatus, string>> = {
   VERIFIED: "Marcar como Pago",
 };
 
-function todayISO() {
-  const d = new Date();
+function toISODate(d: Date): string {
   const yyyy = d.getFullYear();
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   const dd = String(d.getDate()).padStart(2, "0");
   return `${yyyy}-${mm}-${dd}`;
 }
+
+const createSchema = z.object({
+  userId: z.string().min(1, "Selecione um colaborador"),
+  palletId: z.string().min(1, "Selecione um palete"),
+  deliveredQuantity: z
+    .number({ message: "Informe a quantidade" })
+    .int()
+    .positive("Deve ser maior que zero"),
+});
+
+type CreateValues = z.infer<typeof createSchema>;
 
 export default function ProductionPage() {
   const { user: authUser } = useAuth();
@@ -61,7 +90,7 @@ export default function ProductionPage() {
   const [pallets, setPallets] = useState<Pallet[]>([]);
   const [workers, setWorkers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedDate, setSelectedDate] = useState<string>(todayISO());
+  const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
 
   const [selectedRecord, setSelectedRecord] = useState<ProductionHistory | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -70,37 +99,48 @@ export default function ProductionPage() {
   const [transitionOpen, setTransitionOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
 
-  const [userId, setUserId] = useState("");
-  const [palletId, setPalletId] = useState("");
-  const [deliveredQuantity, setDeliveredQuantity] = useState("");
-  const [reformedQuantity, setReformedQuantity] = useState("");
+  const [reformedQuantity, setReformedQuantity] = useState<number | undefined>();
   const [observation, setObservation] = useState("");
 
-  const isToday = selectedDate === todayISO();
+  const today = useMemo(() => new Date(), []);
+  const todayISO = toISODate(today);
+  const selectedISO = toISODate(selectedDate);
+  const isToday = selectedISO === todayISO;
   const isAdmin = authUser?.role === "ADMIN";
   const isManager = authUser?.role === "MANAGER";
   const canCreate = isAdmin || isManager;
   const canTransition = (isAdmin || isManager) && (isToday || isAdmin);
 
+  const createForm = useForm<CreateValues>({
+    resolver: zodResolver(createSchema),
+    defaultValues: {
+      userId: "",
+      palletId: "",
+      deliveredQuantity: undefined as unknown as number,
+    },
+  });
+
   const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
       const [recordsData, palletsData, usersData] = await Promise.all([
-        productionHistoryService.getAll(selectedDate),
+        productionHistoryService.getAll(selectedISO),
         palletsService.getAll(),
         usersService.getAll().catch(() => []),
       ]);
       setRecords(recordsData);
       setPallets(palletsData);
-      setWorkers(usersData.filter((u) => u.role === "EMPLOYEE" || u.role === "MANAGER"));
+      setWorkers(
+        usersData.filter((u) => u.role === "EMPLOYEE" || u.role === "MANAGER"),
+      );
     } catch (err) {
-      console.error("Erro ao carregar dados:", err);
+      console.error(err);
+      toast.error("Erro ao carregar produção");
     } finally {
       setIsLoading(false);
     }
-  }, [selectedDate]);
+  }, [selectedISO]);
 
   useEffect(() => {
     loadData();
@@ -112,17 +152,17 @@ export default function ProductionPage() {
   }
 
   function openCreate() {
-    setUserId(workers[0]?.id || "");
-    setPalletId(pallets[0]?.id || "");
-    setDeliveredQuantity("");
-    setFormError(null);
+    createForm.reset({
+      userId: "",
+      palletId: "",
+      deliveredQuantity: undefined as unknown as number,
+    });
     setCreateOpen(true);
   }
 
   function openTransition(record: ProductionHistory) {
     setSelectedRecord(record);
-    setReformedQuantity("");
-    setFormError(null);
+    setReformedQuantity(undefined);
     setDetailOpen(false);
     setTransitionOpen(true);
   }
@@ -130,27 +170,19 @@ export default function ProductionPage() {
   function openCancel(record: ProductionHistory) {
     setSelectedRecord(record);
     setObservation("");
-    setFormError(null);
     setDetailOpen(false);
     setCancelOpen(true);
   }
 
-  async function handleCreateSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setFormError(null);
-    setIsSubmitting(true);
+  async function onCreate(values: CreateValues) {
     try {
-      await productionHistoryService.create({
-        userId,
-        palletId,
-        deliveredQuantity: Number(deliveredQuantity),
-      });
+      await productionHistoryService.create(values);
+      toast.success("Produção aberta");
       setCreateOpen(false);
       await loadData();
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Erro ao criar registro");
-    } finally {
-      setIsSubmitting(false);
+      console.error(err);
+      toast.error(err instanceof Error ? err.message : "Erro ao criar registro");
     }
   }
 
@@ -159,22 +191,28 @@ export default function ProductionPage() {
     if (!selectedRecord) return;
     const next = NEXT_STATUS[selectedRecord.status];
     if (!next) return;
-    setFormError(null);
     setIsSubmitting(true);
     try {
       if (selectedRecord.status === "OPEN") {
+        if (reformedQuantity === undefined) {
+          toast.error("Informe a quantidade reformada");
+          setIsSubmitting(false);
+          return;
+        }
         await productionHistoryService.update(selectedRecord.id, {
           status: next,
-          reformedQuantity: Number(reformedQuantity),
+          reformedQuantity,
         });
       } else {
         await productionHistoryService.update(selectedRecord.id, { status: next });
       }
+      toast.success("Status atualizado");
       setTransitionOpen(false);
       setSelectedRecord(null);
       await loadData();
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Erro ao avançar status");
+      console.error(err);
+      toast.error(err instanceof Error ? err.message : "Erro ao avançar status");
     } finally {
       setIsSubmitting(false);
     }
@@ -183,68 +221,70 @@ export default function ProductionPage() {
   async function handleCancelSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!selectedRecord) return;
-    setFormError(null);
+    if (!observation.trim()) {
+      toast.error("Informe o motivo do cancelamento");
+      return;
+    }
     setIsSubmitting(true);
     try {
       await productionHistoryService.update(selectedRecord.id, {
         status: "CANCELED",
         observation,
       });
+      toast.success("Produção cancelada");
       setCancelOpen(false);
       setSelectedRecord(null);
       await loadData();
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Erro ao cancelar");
+      console.error(err);
+      toast.error(err instanceof Error ? err.message : "Erro ao cancelar");
     } finally {
       setIsSubmitting(false);
     }
   }
 
   const canAdvance = useMemo(() => {
-    if (!selectedRecord) return false;
-    if (!canTransition) return false;
+    if (!selectedRecord || !canTransition) return false;
     return Boolean(NEXT_STATUS[selectedRecord.status]);
   }, [selectedRecord, canTransition]);
 
   const canCancel = useMemo(() => {
-    if (!selectedRecord) return false;
-    if (!canTransition) return false;
+    if (!selectedRecord || !canTransition) return false;
     return selectedRecord.status === "OPEN" || selectedRecord.status === "VERIFIED";
   }, [selectedRecord, canTransition]);
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-muted-foreground">Carregando...</p>
-      </div>
-    );
-  }
+  const workerOptions = workers.map((u) => ({ value: u.id, label: u.name }));
+  const palletOptions = pallets.map((p) => ({
+    value: p.id,
+    label: `${p.name} (v${p.version})`,
+  }));
 
   return (
     <>
       <PageHeader
         title="Produção"
-        subtitle={`${records.length} registro${records.length !== 1 ? "s" : ""} em ${new Date(selectedDate + "T00:00:00").toLocaleDateString("pt-BR")}`}
+        subtitle={`${records.length} registro${records.length !== 1 ? "s" : ""} em ${format(selectedDate, "dd 'de' MMMM", { locale: ptBR })}`}
         actionLabel={canCreate && isToday ? "Novo Registro" : undefined}
         onAction={canCreate && isToday ? openCreate : undefined}
       />
 
-      <div className="mb-4 flex items-center gap-3">
-        <label className="text-sm font-medium text-muted-foreground">Dia:</label>
-        <input
-          type="date"
-          value={selectedDate}
-          max={isAdmin ? undefined : todayISO()}
-          onChange={(e) => setSelectedDate(e.target.value)}
-          className="bg-transparent border-2 border-input rounded-md px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
-        />
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <div className="w-full sm:w-60">
+          <DatePickerField
+            value={selectedDate}
+            onChange={(d) => d && setSelectedDate(d)}
+            toDate={isAdmin ? undefined : today}
+          />
+        </div>
         {!isToday && (
-          <button
-            onClick={() => setSelectedDate(todayISO())}
-            className="text-sm text-primary hover:underline"
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            onClick={() => setSelectedDate(new Date())}
           >
             Hoje
-          </button>
+          </Button>
         )}
         {!isToday && !isAdmin && (
           <span className="text-xs text-muted-foreground italic">
@@ -253,46 +293,58 @@ export default function ProductionPage() {
         )}
       </div>
 
-      <KanbanBoard
-        columns={KANBAN_COLUMNS}
-        items={records}
-        statusKey="status"
-        keyExtractor={(r) => r.id}
-        onCardClick={handleCardClick}
-        dragDisabled
-        renderCard={(record) => (
-          <div className="bg-card border border-border/40 rounded-lg p-3 space-y-2">
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
-                <p className="font-bold text-sm truncate">
-                  {record.user?.name || "Colaborador"}
-                </p>
-                <p className="text-xs text-muted-foreground truncate">
-                  {record.pallet?.name || "Palete"}
-                </p>
+      {isLoading ? (
+        <div className="flex items-center justify-center py-20">
+          <p className="text-muted-foreground">Carregando...</p>
+        </div>
+      ) : (
+        <KanbanBoard
+          columns={KANBAN_COLUMNS}
+          items={records}
+          statusKey="status"
+          keyExtractor={(r) => r.id}
+          onCardClick={handleCardClick}
+          dragDisabled
+          renderCard={(record) => (
+            <div className="bg-card border border-border/40 rounded-lg p-3 space-y-2">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="font-bold text-sm truncate">
+                    {record.user?.name || "Colaborador"}
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {record.pallet?.name || "Palete"}
+                  </p>
+                </div>
+                <StatusBadge
+                  status={record.status}
+                  labels={STATUS_LABELS}
+                  colors={STATUS_COLORS}
+                  className="text-[10px] px-2 py-0.5"
+                />
               </div>
-              <StatusBadge
-                status={record.status}
-                labels={STATUS_LABELS}
-                colors={STATUS_COLORS}
-                className="text-[10px] px-2 py-0.5"
-              />
-            </div>
-            <div className="flex gap-4 text-xs text-muted-foreground">
-              <span>
-                Entregue:{" "}
-                <strong className="text-foreground">{record.deliveredQuantity}</strong>
-              </span>
-              {record.status !== "OPEN" && (
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
                 <span>
-                  Reformado:{" "}
-                  <strong className="text-foreground">{record.reformedQuantity}</strong>
+                  Entregue: <strong className="text-foreground">{record.deliveredQuantity}</strong>
                 </span>
-              )}
+                {record.status !== "OPEN" && (
+                  <>
+                    <span>
+                      Reformado: <strong className="text-foreground">{record.reformedQuantity}</strong>
+                    </span>
+                    <span>
+                      Desmanchado:{" "}
+                      <strong className="text-foreground">
+                        {record.deliveredQuantity - record.reformedQuantity}
+                      </strong>
+                    </span>
+                  </>
+                )}
+              </div>
             </div>
-          </div>
-        )}
-      />
+          )}
+        />
+      )}
 
       <DetailModal
         title="Registro de Produção"
@@ -316,17 +368,13 @@ export default function ProductionPage() {
               {canCancel && (
                 <Button
                   variant="destructive"
-                  className="font-bold uppercase"
                   onClick={() => selectedRecord && openCancel(selectedRecord)}
                 >
                   Cancelar
                 </Button>
               )}
               {canAdvance && (
-                <Button
-                  className="font-bold uppercase"
-                  onClick={() => selectedRecord && openTransition(selectedRecord)}
-                >
+                <Button onClick={() => selectedRecord && openTransition(selectedRecord)}>
                   {ADVANCE_LABEL[selectedRecord.status] || "Avançar"}
                 </Button>
               )}
@@ -338,35 +386,25 @@ export default function ProductionPage() {
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-xs text-muted-foreground uppercase font-bold">
-                  Colaborador
-                </p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Colaborador</p>
                 <p className="text-sm font-medium">{selectedRecord.user?.name || "-"}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground uppercase font-bold">
-                  Palete
-                </p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Palete</p>
                 <p className="text-sm font-medium">{selectedRecord.pallet?.name || "-"}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground uppercase font-bold">
-                  Qtd. Entregue
-                </p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Qtd. entregue</p>
                 <p className="text-sm font-medium">{selectedRecord.deliveredQuantity}</p>
               </div>
               {selectedRecord.status !== "OPEN" && (
                 <>
                   <div>
-                    <p className="text-xs text-muted-foreground uppercase font-bold">
-                      Qtd. Reformada
-                    </p>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Qtd. reformada</p>
                     <p className="text-sm font-medium">{selectedRecord.reformedQuantity}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground uppercase font-bold">
-                      Desmanchado
-                    </p>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Desmanchado</p>
                     <p className="text-sm font-medium">
                       {selectedRecord.deliveredQuantity - selectedRecord.reformedQuantity}
                     </p>
@@ -374,9 +412,7 @@ export default function ProductionPage() {
                 </>
               )}
               <div>
-                <p className="text-xs text-muted-foreground uppercase font-bold">
-                  Criado em
-                </p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Criado em</p>
                 <p className="text-sm font-medium">
                   {new Date(selectedRecord.createdAt).toLocaleString("pt-BR")}
                 </p>
@@ -384,9 +420,7 @@ export default function ProductionPage() {
             </div>
             {selectedRecord.observation && (
               <div>
-                <p className="text-xs text-muted-foreground uppercase font-bold">
-                  Observação
-                </p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Observação</p>
                 <p className="text-sm mt-1">{selectedRecord.observation}</p>
               </div>
             )}
@@ -399,60 +433,72 @@ export default function ProductionPage() {
         open={createOpen}
         onClose={() => setCreateOpen(false)}
       >
-        <form onSubmit={handleCreateSubmit} className="space-y-6">
-          <select
-            value={userId}
-            onChange={(e) => setUserId(e.target.value)}
-            className="w-full bg-transparent border-2 border-input rounded-md px-3 py-2 text-base text-foreground focus:border-primary focus:outline-none transition-colors"
-            required
-          >
-            <option value="" disabled className="bg-card text-foreground">
-              Colaborador*
-            </option>
-            {workers.map((u) => (
-              <option key={u.id} value={u.id} className="bg-card text-foreground">
-                {u.name}
-              </option>
-            ))}
-          </select>
+        <Form {...createForm}>
+          <form onSubmit={createForm.handleSubmit(onCreate)} className="space-y-5">
+            <FormField
+              control={createForm.control}
+              name="userId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Colaborador</FormLabel>
+                  <FormControl>
+                    <ComboboxField
+                      value={field.value || undefined}
+                      onChange={(v) => field.onChange(v ?? "")}
+                      options={workerOptions}
+                      placeholder="Selecionar colaborador"
+                      searchPlaceholder="Buscar..."
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          <select
-            value={palletId}
-            onChange={(e) => setPalletId(e.target.value)}
-            className="w-full bg-transparent border-2 border-input rounded-md px-3 py-2 text-base text-foreground focus:border-primary focus:outline-none transition-colors"
-            required
-          >
-            <option value="" disabled className="bg-card text-foreground">
-              Palete*
-            </option>
-            {pallets.map((p) => (
-              <option key={p.id} value={p.id} className="bg-card text-foreground">
-                {p.name}
-              </option>
-            ))}
-          </select>
+            <FormField
+              control={createForm.control}
+              name="palletId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Palete</FormLabel>
+                  <FormControl>
+                    <ComboboxField
+                      value={field.value || undefined}
+                      onChange={(v) => field.onChange(v ?? "")}
+                      options={palletOptions}
+                      placeholder="Selecionar palete"
+                      searchPlaceholder="Buscar..."
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          <UnderlineInput
-            placeholder="Quantidade Entregue*"
-            type="number"
-            min="1"
-            value={deliveredQuantity}
-            onChange={(e) => setDeliveredQuantity(e.target.value)}
-            required
-          />
+            <FormField
+              control={createForm.control}
+              name="deliveredQuantity"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Quantidade entregue</FormLabel>
+                  <FormControl>
+                    <IntegerInput min={1} {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          {formError && <p className="text-sm text-destructive">{formError}</p>}
-
-          <div className="flex gap-4 pt-2">
-            <Button
-              type="submit"
-              className="flex-1 font-bold uppercase"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "Salvando..." : "Abrir Produção"}
-            </Button>
-          </div>
-        </form>
+            <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
+              <Button type="button" variant="ghost" onClick={() => setCreateOpen(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={createForm.formState.isSubmitting}>
+                {createForm.formState.isSubmitting ? "Salvando..." : "Abrir produção"}
+              </Button>
+            </div>
+          </form>
+        </Form>
       </FormModal>
 
       <FormModal
@@ -464,24 +510,26 @@ export default function ProductionPage() {
         open={transitionOpen}
         onClose={() => setTransitionOpen(false)}
       >
-        <form onSubmit={handleAdvance} className="space-y-6">
+        <form onSubmit={handleAdvance} className="space-y-5">
           {selectedRecord?.status === "OPEN" && (
             <>
               <p className="text-sm text-muted-foreground">
-                Entregue: <strong className="text-foreground">{selectedRecord.deliveredQuantity}</strong>
+                Entregue:{" "}
+                <strong className="text-foreground">{selectedRecord.deliveredQuantity}</strong>
               </p>
-              <UnderlineInput
-                placeholder="Quantidade Reformada*"
-                type="number"
-                min="0"
-                max={String(selectedRecord?.deliveredQuantity ?? 0)}
-                value={reformedQuantity}
-                onChange={(e) => setReformedQuantity(e.target.value)}
-                required
-              />
-              {reformedQuantity && selectedRecord && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Quantidade reformada</label>
+                <IntegerInput
+                  min={0}
+                  max={selectedRecord?.deliveredQuantity}
+                  value={reformedQuantity}
+                  onChange={setReformedQuantity}
+                  placeholder="0"
+                />
+              </div>
+              {reformedQuantity !== undefined && selectedRecord && (
                 <p className="text-xs text-muted-foreground">
-                  Desmanchado: {selectedRecord.deliveredQuantity - Number(reformedQuantity)}
+                  Desmanchado: {selectedRecord.deliveredQuantity - reformedQuantity}
                 </p>
               )}
             </>
@@ -493,22 +541,15 @@ export default function ProductionPage() {
             </p>
           )}
 
-          {formError && <p className="text-sm text-destructive">{formError}</p>}
-
-          <div className="flex gap-4 pt-2">
+          <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
             <Button
               type="button"
-              variant="outline"
-              className="flex-1 font-bold uppercase"
+              variant="ghost"
               onClick={() => setTransitionOpen(false)}
             >
               Voltar
             </Button>
-            <Button
-              type="submit"
-              className="flex-1 font-bold uppercase"
-              disabled={isSubmitting}
-            >
+            <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? "Salvando..." : "Confirmar"}
             </Button>
           </div>
@@ -520,30 +561,26 @@ export default function ProductionPage() {
         open={cancelOpen}
         onClose={() => setCancelOpen(false)}
       >
-        <form onSubmit={handleCancelSubmit} className="space-y-6">
-          <UnderlineInput
-            placeholder="Motivo do cancelamento*"
-            value={observation}
-            onChange={(e) => setObservation(e.target.value)}
-            required
-          />
-          {formError && <p className="text-sm text-destructive">{formError}</p>}
-          <div className="flex gap-4 pt-2">
+        <form onSubmit={handleCancelSubmit} className="space-y-5">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Motivo do cancelamento</label>
+            <Textarea
+              placeholder="Descreva brevemente o motivo"
+              value={observation}
+              onChange={(e) => setObservation(e.target.value)}
+              rows={3}
+            />
+          </div>
+          <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
             <Button
               type="button"
-              variant="outline"
-              className="flex-1 font-bold uppercase"
+              variant="ghost"
               onClick={() => setCancelOpen(false)}
             >
               Voltar
             </Button>
-            <Button
-              type="submit"
-              variant="destructive"
-              className="flex-1 font-bold uppercase"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "Cancelando..." : "Cancelar Produção"}
+            <Button type="submit" variant="destructive" disabled={isSubmitting}>
+              {isSubmitting ? "Cancelando..." : "Cancelar produção"}
             </Button>
           </div>
         </form>

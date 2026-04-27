@@ -1,15 +1,38 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useFieldArray, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Calendar, Package, Plus, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
 import { KanbanBoard, type KanbanColumnDef } from "@/components/shared/kanban-board";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { DetailModal } from "@/components/shared/detail-modal";
 import { FormModal } from "@/components/shared/form-modal";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
-import { UnderlineInput } from "@/components/shared/underline-input";
 import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  ComboboxField,
+  DatePickerField,
+  IntegerInput,
+} from "@/components/shared/form-fields";
 import {
   ordersService,
   type Order,
@@ -39,10 +62,24 @@ const KANBAN_COLUMNS: KanbanColumnDef[] = [
   { status: "CANCELED", label: "Cancelado", headerColor: "bg-status-canceled" },
 ];
 
-interface OrderItemForm {
-  palletId: string;
-  quantityRequested: string;
-}
+const createSchema = z.object({
+  customerId: z.string().min(1, "Selecione um cliente"),
+  deadline: z.date({ message: "Selecione o prazo" }),
+  status: z.enum(["OPEN", "IN_PRODUCTION", "DONE", "CANCELED"]).optional(),
+  items: z
+    .array(
+      z.object({
+        palletId: z.string().min(1, "Selecione um palete"),
+        quantityRequested: z
+          .number({ message: "Informe a quantidade" })
+          .int()
+          .positive("Quantidade deve ser maior que zero"),
+      }),
+    )
+    .min(1, "Adicione ao menos um item"),
+});
+
+type FormValues = z.infer<typeof createSchema>;
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -50,28 +87,29 @@ export default function OrdersPage() {
   const [pallets, setPallets] = useState<Pallet[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Detail modal
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
 
-  // Form modal
   const [formOpen, setFormOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Order | null>(null);
 
-  // Delete
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  // Form fields
-  const [customerId, setCustomerId] = useState("");
-  const [deadline, setDeadline] = useState("");
-  const [formStatus, setFormStatus] = useState<OrderStatus>("OPEN");
-  const [items, setItems] = useState<OrderItemForm[]>([
-    { palletId: "", quantityRequested: "" },
-  ]);
-  const [error, setError] = useState("");
+  const form = useForm<FormValues>({
+    resolver: zodResolver(createSchema),
+    defaultValues: {
+      customerId: "",
+      deadline: undefined as unknown as Date,
+      status: "OPEN",
+      items: [{ palletId: "", quantityRequested: undefined as unknown as number }],
+    },
+  });
+
+  const itemsArray = useFieldArray({ control: form.control, name: "items" });
 
   const loadData = useCallback(async () => {
+    setIsLoading(true);
     try {
       const [ordersData, customersData, palletsData] = await Promise.all([
         ordersService.getAll(),
@@ -82,7 +120,8 @@ export default function OrdersPage() {
       setCustomers(customersData);
       setPallets(palletsData);
     } catch (err) {
-      console.error("Erro ao carregar dados:", err);
+      console.error(err);
+      toast.error("Erro ao carregar pedidos");
     } finally {
       setIsLoading(false);
     }
@@ -92,106 +131,86 @@ export default function OrdersPage() {
     loadData();
   }, [loadData]);
 
-  // --- Card click → detail modal ---
   function handleCardClick(order: Order) {
     setSelectedOrder(order);
     setDetailOpen(true);
   }
 
-  // --- Drag-and-drop status change ---
   async function handleStatusChange(orderId: string, newStatus: string) {
     setOrders((prev) =>
       prev.map((o) =>
-        o.id === orderId ? { ...o, status: newStatus as OrderStatus } : o
-      )
+        o.id === orderId ? { ...o, status: newStatus as OrderStatus } : o,
+      ),
     );
     try {
-      await ordersService.update(orderId, {
-        status: newStatus as OrderStatus,
-      });
+      await ordersService.update(orderId, { status: newStatus as OrderStatus });
+      toast.success("Status atualizado");
     } catch (err) {
-      console.error("Erro ao atualizar status:", err);
+      console.error(err);
+      toast.error("Erro ao atualizar status");
       loadData();
     }
   }
 
-  // --- Create ---
   function openCreate() {
     setEditTarget(null);
-    setCustomerId("");
-    setDeadline("");
-    setFormStatus("OPEN");
-    setItems([{ palletId: "", quantityRequested: "" }]);
-    setError("");
+    form.reset({
+      customerId: "",
+      deadline: undefined as unknown as Date,
+      status: "OPEN",
+      items: [{ palletId: "", quantityRequested: undefined as unknown as number }],
+    });
     setFormOpen(true);
   }
 
-  // --- Edit ---
   function openEdit(order: Order) {
     setEditTarget(order);
-    setCustomerId(order.customerId);
-    setDeadline(order.deadline.split("T")[0]);
-    setFormStatus(order.status);
-    setItems([]);
-    setError("");
+    form.reset({
+      customerId: order.customerId,
+      deadline: new Date(order.deadline),
+      status: order.status,
+      items: (order.items ?? []).map((i) => ({
+        palletId: i.palletId,
+        quantityRequested: i.quantityRequested,
+      })),
+    });
     setDetailOpen(false);
     setFormOpen(true);
   }
 
-  // --- Items management (create mode only) ---
-  function addItem() {
-    setItems([...items, { palletId: "", quantityRequested: "" }]);
-  }
-
-  function removeItem(index: number) {
-    setItems(items.filter((_, i) => i !== index));
-  }
-
-  function updateItem(index: number, field: keyof OrderItemForm, value: string) {
-    const updated = [...items];
-    updated[index][field] = value;
-    setItems(updated);
-  }
-
-  // --- Submit ---
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setError("");
+  async function onSubmit(values: FormValues) {
     try {
+      const deadlineIso = values.deadline.toISOString();
       if (editTarget) {
         await ordersService.update(editTarget.id, {
-          customerId,
-          deadline,
-          status: formStatus,
+          customerId: values.customerId,
+          deadline: deadlineIso,
+          status: values.status,
         });
+        toast.success("Pedido atualizado");
       } else {
         await ordersService.create({
-          customerId,
-          deadline,
-          items: items.map((i) => ({
-            palletId: i.palletId,
-            quantityRequested: Number(i.quantityRequested),
-          })),
+          customerId: values.customerId,
+          deadline: deadlineIso,
+          items: values.items,
         });
+        toast.success("Pedido criado");
       }
       setFormOpen(false);
       loadData();
     } catch (err) {
-      setError("Erro ao salvar pedido. Verifique os dados.");
       console.error(err);
-    } finally {
-      setIsSubmitting(false);
+      toast.error("Erro ao salvar pedido");
     }
   }
 
-  // --- Delete ---
   async function handleDelete() {
     const target = editTarget || selectedOrder;
     if (!target) return;
-    setIsSubmitting(true);
+    setIsDeleting(true);
     try {
       await ordersService.remove(target.id);
+      toast.success("Pedido excluído");
       setDeleteOpen(false);
       setFormOpen(false);
       setDetailOpen(false);
@@ -199,11 +218,23 @@ export default function OrdersPage() {
       setSelectedOrder(null);
       loadData();
     } catch (err) {
-      console.error("Erro ao excluir pedido:", err);
+      console.error(err);
+      toast.error("Erro ao excluir pedido");
     } finally {
-      setIsSubmitting(false);
+      setIsDeleting(false);
     }
   }
+
+  const customerOptions = customers.map((c) => ({
+    value: c.id,
+    label: c.businessName,
+    description: c.corporateName ?? undefined,
+  }));
+
+  const palletOptions = pallets.map((p) => ({
+    value: p.id,
+    label: `${p.name} (v${p.version})`,
+  }));
 
   if (isLoading) {
     return (
@@ -256,7 +287,6 @@ export default function OrdersPage() {
         )}
       />
 
-      {/* Detail Modal */}
       <DetailModal
         title={`Pedido — ${selectedOrder?.customer?.businessName || ""}`}
         open={detailOpen}
@@ -275,19 +305,10 @@ export default function OrdersPage() {
         }
         footer={
           <>
-            <Button
-              variant="destructive"
-              className="font-bold uppercase"
-              onClick={() => setDeleteOpen(true)}
-            >
+            <Button variant="destructive" onClick={() => setDeleteOpen(true)}>
               Excluir
             </Button>
-            <Button
-              className="font-bold uppercase"
-              onClick={() => {
-                if (selectedOrder) openEdit(selectedOrder);
-              }}
-            >
+            <Button onClick={() => selectedOrder && openEdit(selectedOrder)}>
               Editar
             </Button>
           </>
@@ -297,43 +318,31 @@ export default function OrdersPage() {
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-xs text-muted-foreground uppercase font-bold">
-                  Cliente
-                </p>
-                <p className="text-sm font-medium">
-                  {selectedOrder.customer?.businessName || "-"}
-                </p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Cliente</p>
+                <p className="text-sm font-medium">{selectedOrder.customer?.businessName || "-"}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground uppercase font-bold">
-                  Prazo
-                </p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Prazo</p>
                 <p className="text-sm font-medium">
                   {new Date(selectedOrder.deadline).toLocaleDateString("pt-BR")}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground uppercase font-bold">
-                  Criado em
-                </p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Criado em</p>
                 <p className="text-sm font-medium">
                   {new Date(selectedOrder.createdAt).toLocaleDateString("pt-BR")}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground uppercase font-bold">
-                  Total de Itens
-                </p>
-                <p className="text-sm font-medium">
-                  {selectedOrder.items?.length || 0}
-                </p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Total de itens</p>
+                <p className="text-sm font-medium">{selectedOrder.items?.length || 0}</p>
               </div>
             </div>
 
             {selectedOrder.items && selectedOrder.items.length > 0 && (
               <div>
-                <p className="text-xs text-muted-foreground uppercase font-bold mb-2">
-                  Itens do Pedido
+                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">
+                  Itens do pedido
                 </p>
                 <div className="space-y-2">
                   {selectedOrder.items.map((item) => (
@@ -346,16 +355,10 @@ export default function OrdersPage() {
                       </span>
                       <div className="flex gap-4 text-xs text-muted-foreground">
                         <span>
-                          Solicitado:{" "}
-                          <strong className="text-foreground">
-                            {item.quantityRequested}
-                          </strong>
+                          Solicitado: <strong className="text-foreground">{item.quantityRequested}</strong>
                         </span>
                         <span>
-                          Produzido:{" "}
-                          <strong className="text-foreground">
-                            {item.quantityProduced}
-                          </strong>
+                          Produzido: <strong className="text-foreground">{item.quantityProduced}</strong>
                         </span>
                       </div>
                     </div>
@@ -367,193 +370,214 @@ export default function OrdersPage() {
         )}
       </DetailModal>
 
-      {/* Form Modal (Create/Edit) */}
       <FormModal
         title={editTarget ? "Editar Pedido" : "Novo Pedido"}
         open={formOpen}
         onClose={() => setFormOpen(false)}
+        size="lg"
       >
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <select
-            value={customerId}
-            onChange={(e) => setCustomerId(e.target.value)}
-            className="w-full bg-transparent border-2 border-input rounded-md px-3 py-2 text-base text-foreground focus:border-primary focus:outline-none transition-colors"
-            required
-          >
-            <option value="" disabled className="bg-card text-foreground">
-              Cliente*
-            </option>
-            {customers.map((c) => (
-              <option
-                key={c.id}
-                value={c.id}
-                className="bg-card text-foreground"
-              >
-                {c.businessName}
-              </option>
-            ))}
-          </select>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+            <FormField
+              control={form.control}
+              name="customerId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Cliente</FormLabel>
+                  <FormControl>
+                    <ComboboxField
+                      value={field.value || undefined}
+                      onChange={(v) => field.onChange(v ?? "")}
+                      options={customerOptions}
+                      placeholder="Selecionar cliente"
+                      searchPlaceholder="Buscar cliente..."
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          <UnderlineInput
-            type="date"
-            placeholder="Prazo*"
-            value={deadline}
-            onChange={(e) => setDeadline(e.target.value)}
-            required
-          />
+            <FormField
+              control={form.control}
+              name="deadline"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Prazo</FormLabel>
+                  <FormControl>
+                    <DatePickerField value={field.value} onChange={field.onChange} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          {editTarget && (
-            <select
-              value={formStatus}
-              onChange={(e) => setFormStatus(e.target.value as OrderStatus)}
-              className="w-full bg-transparent border-2 border-input rounded-md px-3 py-2 text-base text-foreground focus:border-primary focus:outline-none transition-colors"
-            >
-              <option value="OPEN" className="bg-card text-foreground">
-                Aberto
-              </option>
-              <option value="IN_PRODUCTION" className="bg-card text-foreground">
-                Em Produção
-              </option>
-              <option value="DONE" className="bg-card text-foreground">
-                Concluído
-              </option>
-              <option value="CANCELED" className="bg-card text-foreground">
-                Cancelado
-              </option>
-            </select>
-          )}
+            {editTarget && (
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Status</FormLabel>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="OPEN">Aberto</SelectItem>
+                        <SelectItem value="IN_PRODUCTION">Em produção</SelectItem>
+                        <SelectItem value="DONE">Concluído</SelectItem>
+                        <SelectItem value="CANCELED">Cancelado</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
-          {/* Items — only on create */}
-          {!editTarget && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-bold text-sm">Itens do Pedido</h3>
+            {!editTarget && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-medium">Itens do pedido</h3>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      itemsArray.append({
+                        palletId: "",
+                        quantityRequested: undefined as unknown as number,
+                      })
+                    }
+                  >
+                    <Plus className="size-4 mr-1" />
+                    Adicionar
+                  </Button>
+                </div>
+
+                <div className="space-y-3">
+                  {itemsArray.fields.map((field, index) => (
+                    <div
+                      key={field.id}
+                      className="bg-background/40 border border-border/30 rounded-lg p-3 space-y-3"
+                    >
+                      <div className="flex gap-3 items-start">
+                        <div className="flex-1 min-w-0">
+                          <FormField
+                            control={form.control}
+                            name={`items.${index}.palletId`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-xs">Palete</FormLabel>
+                                <FormControl>
+                                  <ComboboxField
+                                    value={field.value || undefined}
+                                    onChange={(v) => field.onChange(v ?? "")}
+                                    options={palletOptions}
+                                    placeholder="Selecionar palete"
+                                    searchPlaceholder="Buscar palete..."
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        <div className="w-24">
+                          <FormField
+                            control={form.control}
+                            name={`items.${index}.quantityRequested`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-xs">Qtd.</FormLabel>
+                                <FormControl>
+                                  <IntegerInput min={1} {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        {itemsArray.fields.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => itemsArray.remove(index)}
+                            className="text-destructive p-1 mt-6"
+                            aria-label="Remover item"
+                          >
+                            <Trash2 className="size-4" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {form.formState.errors.items?.root && (
+                  <p className="text-sm text-destructive">
+                    {form.formState.errors.items.root.message}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {editTarget && editTarget.items && editTarget.items.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium">Itens do pedido</h3>
+                {editTarget.items.map((item) => (
+                  <div
+                    key={item.id}
+                    className="bg-background/50 border border-border/20 rounded-lg px-4 py-3 flex items-center justify-between"
+                  >
+                    <span className="text-sm font-medium">{item.pallet?.name || "Palete"}</span>
+                    <div className="flex gap-3 text-xs text-muted-foreground">
+                      <span>
+                        Solicitado: <strong className="text-foreground">{item.quantityRequested}</strong>
+                      </span>
+                      <span>
+                        Produzido: <strong className="text-foreground">{item.quantityProduced}</strong>
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
+              {editTarget && (
                 <Button
                   type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={addItem}
+                  variant="destructive"
+                  onClick={() => setDeleteOpen(true)}
+                  className="sm:mr-auto"
                 >
-                  <Plus className="w-4 h-4 mr-1" />
-                  Item
+                  Excluir
                 </Button>
-              </div>
-
-              {items.map((item, index) => (
-                <div
-                  key={index}
-                  className="flex gap-3 items-end bg-background/50 p-3 rounded-lg border border-border/30"
-                >
-                  <div className="flex-1">
-                    <select
-                      value={item.palletId}
-                      onChange={(e) =>
-                        updateItem(index, "palletId", e.target.value)
-                      }
-                      className="w-full bg-transparent border-b-2 border-input py-2 text-sm text-foreground focus:border-primary focus:outline-none transition-colors"
-                      required
-                    >
-                      <option value="" disabled>
-                        Palete*
-                      </option>
-                      {pallets.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="w-24">
-                    <input
-                      type="number"
-                      min="1"
-                      placeholder="Qtd*"
-                      value={item.quantityRequested}
-                      onChange={(e) =>
-                        updateItem(index, "quantityRequested", e.target.value)
-                      }
-                      className="w-full bg-transparent border-b-2 border-input py-2 text-sm text-foreground focus:border-primary focus:outline-none transition-colors"
-                      required
-                    />
-                  </div>
-                  {items.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => removeItem(index)}
-                      className="text-destructive p-1"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Items display — edit mode (read-only) */}
-          {editTarget && editTarget.items && editTarget.items.length > 0 && (
-            <div className="space-y-2">
-              <h3 className="font-bold text-sm">Itens do Pedido</h3>
-              {editTarget.items.map((item) => (
-                <div
-                  key={item.id}
-                  className="bg-background/50 border border-border/20 rounded-lg px-4 py-3 flex items-center justify-between"
-                >
-                  <span className="text-sm font-medium">
-                    {item.pallet?.name || "Palete"}
-                  </span>
-                  <div className="flex gap-3 text-xs text-muted-foreground">
-                    <span>
-                      Solicitado:{" "}
-                      <strong className="text-foreground">
-                        {item.quantityRequested}
-                      </strong>
-                    </span>
-                    <span>
-                      Produzido:{" "}
-                      <strong className="text-foreground">
-                        {item.quantityProduced}
-                      </strong>
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {error && <p className="text-sm text-destructive">{error}</p>}
-
-          <div className="flex gap-4 pt-2">
-            {editTarget && (
-              <Button
-                type="button"
-                variant="destructive"
-                className="flex-1 font-bold uppercase"
-                onClick={() => setDeleteOpen(true)}
-              >
-                Excluir
+              )}
+              <Button type="button" variant="ghost" onClick={() => setFormOpen(false)}>
+                Cancelar
               </Button>
-            )}
-            <Button
-              type="submit"
-              className="flex-1 font-bold uppercase"
-              disabled={isSubmitting}
-            >
-              {isSubmitting
-                ? "Salvando..."
-                : editTarget
-                  ? "Atualizar"
-                  : "Salvar"}
-            </Button>
-          </div>
-        </form>
+              <Button type="submit" disabled={form.formState.isSubmitting}>
+                {form.formState.isSubmitting
+                  ? "Salvando..."
+                  : editTarget
+                    ? "Atualizar"
+                    : "Salvar"}
+              </Button>
+            </div>
+          </form>
+        </Form>
       </FormModal>
 
       <ConfirmDialog
         open={deleteOpen}
         onClose={() => setDeleteOpen(false)}
         onConfirm={handleDelete}
-        isLoading={isSubmitting}
+        isLoading={isDeleting}
+        title="Excluir pedido?"
+        description="Essa ação não pode ser desfeita."
       />
     </>
   );
