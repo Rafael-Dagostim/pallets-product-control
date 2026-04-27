@@ -7,6 +7,7 @@ import {
   FindOneProductionHistoryService,
   UpdateProductionHistoryService,
   RemoveProductionHistoryService,
+  BulkPayProductionHistoryService,
 } from './services';
 
 describe('ProductionHistoryController', () => {
@@ -18,6 +19,7 @@ describe('ProductionHistoryController', () => {
   let findOnePH: { execute: jest.Mock };
   let updatePH: { execute: jest.Mock };
   let removePH: { execute: jest.Mock };
+  let bulkPayPH: { execute: jest.Mock };
 
   beforeEach(async () => {
     createPH = mockService();
@@ -25,6 +27,7 @@ describe('ProductionHistoryController', () => {
     findOnePH = mockService();
     updatePH = mockService();
     removePH = mockService();
+    bulkPayPH = mockService();
 
     const module = await Test.createTestingModule({
       controllers: [ProductionHistoryController],
@@ -34,6 +37,7 @@ describe('ProductionHistoryController', () => {
         { provide: FindOneProductionHistoryService, useValue: findOnePH },
         { provide: UpdateProductionHistoryService, useValue: updatePH },
         { provide: RemoveProductionHistoryService, useValue: removePH },
+        { provide: BulkPayProductionHistoryService, useValue: bulkPayPH },
       ],
     }).compile();
 
@@ -50,8 +54,9 @@ describe('ProductionHistoryController', () => {
 
   it('delegates findAll with date query', async () => {
     findAllPH.execute.mockResolvedValue([]);
-    await controller.findAll('user-1', UserRole.ADMIN, '2026-04-24');
-    expect(findAllPH.execute).toHaveBeenCalledWith('user-1', UserRole.ADMIN, '2026-04-24');
+    const query = { date: '2026-04-24' };
+    await controller.findAll('user-1', UserRole.ADMIN, query);
+    expect(findAllPH.execute).toHaveBeenCalledWith('user-1', UserRole.ADMIN, query);
   });
 
   it('delegates findOne', async () => {

@@ -1,7 +1,14 @@
 import { PrismaService } from '@core/database/database.service';
 
 export type MockPrismaService = {
-  [K in 'user' | 'pallet' | 'customer' | 'order' | 'orderItem' | 'productionHistory']: {
+  [K in
+    | 'user'
+    | 'pallet'
+    | 'customer'
+    | 'order'
+    | 'orderItem'
+    | 'productionHistory'
+    | 'reportTemplate']: {
     findFirst: jest.Mock;
     findMany: jest.Mock;
     create: jest.Mock;
@@ -41,6 +48,12 @@ export const createMockPrismaService = (): MockPrismaService => ({
     update: jest.fn(),
   },
   productionHistory: {
+    findFirst: jest.fn(),
+    findMany: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+  },
+  reportTemplate: {
     findFirst: jest.fn(),
     findMany: jest.fn(),
     create: jest.fn(),

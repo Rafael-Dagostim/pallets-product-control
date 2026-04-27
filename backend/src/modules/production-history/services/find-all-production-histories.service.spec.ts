@@ -23,7 +23,7 @@ describe('FindAllProductionHistoriesService', () => {
   it('filters by the given date (full day range) for ADMIN', async () => {
     prisma.productionHistory.findMany.mockResolvedValue([]);
 
-    await service.execute('admin-1', 'ADMIN' as any, '2026-04-24');
+    await service.execute('admin-1', 'ADMIN' as any, { date: '2026-04-24' });
 
     const call = prisma.productionHistory.findMany.mock.calls[0][0];
     const expectedStart = new Date('2026-04-24T00:00:00');
@@ -46,7 +46,7 @@ describe('FindAllProductionHistoriesService', () => {
 
   it('filters by userId for EMPLOYEE', async () => {
     prisma.productionHistory.findMany.mockResolvedValue([]);
-    await service.execute('emp-1', 'EMPLOYEE' as any, '2026-04-24');
+    await service.execute('emp-1', 'EMPLOYEE' as any, { date: '2026-04-24' });
     const call = prisma.productionHistory.findMany.mock.calls[0][0];
     expect(call.where.userId).toBe('emp-1');
   });

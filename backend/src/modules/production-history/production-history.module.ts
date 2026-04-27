@@ -6,6 +6,7 @@ import {
   FindOneProductionHistoryService,
   UpdateProductionHistoryService,
   RemoveProductionHistoryService,
+  BulkPayProductionHistoryService,
 } from './services';
 
 @Module({
@@ -16,6 +17,7 @@ import {
     FindOneProductionHistoryService,
     UpdateProductionHistoryService,
     RemoveProductionHistoryService,
+    BulkPayProductionHistoryService,
   ],
 })
 export class ProductionHistoryModule {}

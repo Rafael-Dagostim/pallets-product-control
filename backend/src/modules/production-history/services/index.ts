@@ -3,3 +3,4 @@ export { FindAllProductionHistoriesService } from './find-all-production-histori
 export { FindOneProductionHistoryService } from './find-one-production-history.service';
 export { UpdateProductionHistoryService } from './update-production-history.service';
 export { RemoveProductionHistoryService } from './remove-production-history.service';
+export { BulkPayProductionHistoryService } from './bulk-pay-production-history.service';
