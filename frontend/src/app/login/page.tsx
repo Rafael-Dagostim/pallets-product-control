@@ -2,13 +2,15 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { User, Lock } from "lucide-react";
+import { Lock } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { UnderlineInput } from "@/components/shared/underline-input";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { DocumentInput } from "@/components/shared/form-fields";
 import { PalletLogo } from "@/components/shared/pallet-logo";
 import { authService } from "@/services/auth.service";
-import { setTokens } from "@/lib/api";
-import { maskCPF, unmask } from "@/lib/masks";
+import { cn } from "@/lib/utils";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -23,10 +25,11 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      await authService.login(unmask(document), password);
+      await authService.login(document, password);
       router.push("/production");
     } catch {
       setError("Credenciais inválidas. Verifique seus dados.");
+      toast.error("Não foi possível entrar");
     } finally {
       setIsLoading(false);
     }
@@ -34,19 +37,13 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
-      {/* Left panel - brand */}
       <div className="bg-secondary flex flex-col items-center justify-center px-8 py-12 md:w-2/5 md:min-h-screen relative overflow-hidden">
         <div className="relative z-10 text-center">
           <PalletLogo className="w-56 md:w-72 mx-auto" variant="full" />
         </div>
-
-        {/* Decorative waves (desktop only) */}
         <div className="hidden md:block absolute bottom-0 left-0 right-0">
           <svg viewBox="0 0 400 200" className="w-full" preserveAspectRatio="none">
-            <path
-              d="M0,100 Q100,50 200,120 T400,80 L400,200 L0,200 Z"
-              fill="#3D2E22"
-            />
+            <path d="M0,100 Q100,50 200,120 T400,80 L400,200 L0,200 Z" fill="#3D2E22" />
             <path
               d="M0,140 Q100,90 200,150 T400,120 L400,200 L0,200 Z"
               fill="#8B7355"
@@ -61,11 +58,10 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Right panel - form */}
       <div className="flex-1 flex flex-col items-center justify-center px-8 py-12 md:py-0">
         <div className="w-full max-w-sm">
           <div className="text-center mb-10">
-            <h2 className="text-3xl md:text-4xl font-black tracking-tight">
+            <h2 className="text-3xl md:text-4xl font-semibold tracking-tight">
               Bem-vindo
             </h2>
             <p className="text-muted-foreground text-sm mt-2">
@@ -73,45 +69,47 @@ export default function LoginPage() {
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-8">
-            <UnderlineInput
-              icon={<User className="w-5 h-5" />}
-              placeholder="CPF"
-              value={document}
-              onChange={(e) => setDocument(maskCPF(e.target.value))}
-              required
-              autoComplete="username"
-              inputMode="numeric"
-              maxLength={14}
-            />
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="space-y-2">
+              <Label htmlFor="document">CPF</Label>
+              <DocumentInput
+                id="document"
+                kind="cpf"
+                value={document}
+                onChange={setDocument}
+                autoComplete="username"
+              />
+            </div>
 
-            <UnderlineInput
-              icon={<Lock className="w-5 h-5" />}
-              type="password"
-              placeholder="Senha"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              autoComplete="current-password"
-            />
+            <div className="space-y-2">
+              <Label htmlFor="password">Senha</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••••"
+                  className="pl-9"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  autoComplete="current-password"
+                />
+              </div>
+            </div>
 
             {error && (
-              <p className="text-sm text-destructive text-center">{error}</p>
+              <p className={cn("text-sm text-destructive text-center")}>{error}</p>
             )}
 
-            <Button
-              type="submit"
-              className="w-full py-6 text-base font-bold uppercase tracking-widest rounded-lg"
-              disabled={isLoading}
-            >
-              {isLoading ? "Entrando..." : "Login"}
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? "Entrando..." : "Entrar"}
             </Button>
           </form>
         </div>
 
         <footer className="absolute bottom-4 md:static md:mt-16 text-sm text-muted-foreground">
-          Develop by{" "}
-          <span className="text-primary font-bold">Rafael Dagostim</span>
+          Develop by <span className="text-primary font-semibold">Rafael Dagostim</span>
         </footer>
       </div>
     </div>
