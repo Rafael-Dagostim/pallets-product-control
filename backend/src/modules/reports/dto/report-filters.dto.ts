@@ -1,4 +1,4 @@
-import { IsDateString, IsOptional, IsUUID } from 'class-validator';
+import { IsDateString, IsOptional, IsString, Length } from 'class-validator';
 
 export class ReportFiltersDto {
   @IsDateString()
@@ -8,10 +8,12 @@ export class ReportFiltersDto {
   to: string;
 
   @IsOptional()
-  @IsUUID('4')
+  @IsString()
+  @Length(26, 26)
   userId?: string;
 
   @IsOptional()
-  @IsUUID('4')
+  @IsString()
+  @Length(26, 26)
   palletId?: string;
 }

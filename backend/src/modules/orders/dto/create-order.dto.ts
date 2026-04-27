@@ -3,13 +3,15 @@ import {
   ArrayMinSize,
   IsArray,
   IsDateString,
-  IsUUID,
+  IsString,
+  Length,
   ValidateNested,
 } from 'class-validator';
 import { CreateOrderItemNestedDto } from './create-order-item-nested.dto';
 
 export class CreateOrderDto {
-  @IsUUID()
+  @IsString()
+  @Length(26, 26)
   customerId: string;
 
   @IsDateString()

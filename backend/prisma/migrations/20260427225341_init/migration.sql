@@ -2,7 +2,7 @@
 CREATE TYPE "UserRole" AS ENUM ('ADMIN', 'MANAGER', 'EMPLOYEE');
 
 -- CreateEnum
-CREATE TYPE "ProductionStatus" AS ENUM ('OPEN', 'REFORMED', 'CANCELED', 'PAID');
+CREATE TYPE "ProductionStatus" AS ENUM ('OPEN', 'VERIFIED', 'CANCELED', 'PAID');
 
 -- CreateEnum
 CREATE TYPE "OrderStatus" AS ENUM ('OPEN', 'IN_PRODUCTION', 'DONE', 'CANCELED');
@@ -93,14 +93,27 @@ CREATE TABLE "order_items" (
     CONSTRAINT "order_items_pkey" PRIMARY KEY ("id")
 );
 
--- CreateIndex
-CREATE UNIQUE INDEX "users_name_key" ON "users"("name");
+-- CreateTable
+CREATE TABLE "report_templates" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "widgets" JSONB NOT NULL,
+    "created_by_id" TEXT,
+    "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMPTZ NOT NULL,
+    "deleted_at" TIMESTAMPTZ,
+
+    CONSTRAINT "report_templates_pkey" PRIMARY KEY ("id")
+);
 
 -- CreateIndex
 CREATE UNIQUE INDEX "users_document_key" ON "users"("document");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "pallets_name_version_key" ON "pallets"("name", "version");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "report_templates_name_key" ON "report_templates"("name");
 
 -- AddForeignKey
 ALTER TABLE "pallets" ADD CONSTRAINT "pallets_version_from_id_fkey" FOREIGN KEY ("version_from_id") REFERENCES "pallets"("id") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -119,3 +132,6 @@ ALTER TABLE "order_items" ADD CONSTRAINT "order_items_order_id_fkey" FOREIGN KEY
 
 -- AddForeignKey
 ALTER TABLE "order_items" ADD CONSTRAINT "order_items_pallet_id_fkey" FOREIGN KEY ("pallet_id") REFERENCES "pallets"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "report_templates" ADD CONSTRAINT "report_templates_created_by_id_fkey" FOREIGN KEY ("created_by_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;

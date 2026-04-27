@@ -6,7 +6,6 @@ import {
   Patch,
   Param,
   Delete,
-  ParseUUIDPipe,
 } from '@nestjs/common';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { UserRole } from '@generated/prisma';
@@ -44,14 +43,14 @@ export class PalletsController {
   }
 
   @Get(':id')
-  findOne(@Param('id', ParseUUIDPipe) id: string) {
+  findOne(@Param('id') id: string) {
     return this.findOnePallet.execute(id);
   }
 
   @Patch(':id')
   @Roles(UserRole.ADMIN, UserRole.MANAGER)
   update(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id') id: string,
     @Body() dto: UpdatePalletDto,
   ) {
     return this.updatePallet.execute(id, dto);
@@ -59,7 +58,7 @@ export class PalletsController {
 
   @Delete(':id')
   @Roles(UserRole.ADMIN)
-  remove(@Param('id', ParseUUIDPipe) id: string) {
+  remove(@Param('id') id: string) {
     return this.removePallet.execute(id);
   }
 }

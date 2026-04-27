@@ -4,7 +4,6 @@ import {
   Delete,
   Get,
   Param,
-  ParseUUIDPipe,
   Patch,
   Post,
   Query,
@@ -56,20 +55,20 @@ export class ReportsController {
   }
 
   @Get('templates/:id')
-  findTemplate(@Param('id', ParseUUIDPipe) id: string) {
+  findTemplate(@Param('id') id: string) {
     return this.findOneReportTemplate.execute(id);
   }
 
   @Patch('templates/:id')
   updateTemplate(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id') id: string,
     @Body() dto: UpdateReportTemplateDto,
   ) {
     return this.updateReportTemplate.execute(id, dto);
   }
 
   @Delete('templates/:id')
-  removeTemplate(@Param('id', ParseUUIDPipe) id: string) {
+  removeTemplate(@Param('id') id: string) {
     return this.removeReportTemplate.execute(id);
   }
 }

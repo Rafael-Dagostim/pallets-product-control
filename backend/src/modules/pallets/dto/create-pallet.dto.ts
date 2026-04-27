@@ -1,4 +1,11 @@
-import { IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Length,
+  MaxLength,
+} from 'class-validator';
 
 export class CreatePalletDto {
   @IsString()
@@ -16,6 +23,7 @@ export class CreatePalletDto {
   sellPrice: number;
 
   @IsOptional()
-  @IsUUID()
+  @IsString()
+  @Length(26, 26)
   versionFromId?: string;
 }

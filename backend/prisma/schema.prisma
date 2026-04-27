@@ -9,7 +9,7 @@ datasource db {
 }
 
 model User {
-  id        String    @id @default(uuid())
+  id        String    @id @default(ulid())
   name      String    @db.VarChar(100)
   document  String    @unique() @db.VarChar(20)
   password  String
@@ -19,14 +19,14 @@ model User {
   updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
   deletedAt DateTime? @map("deleted_at") @db.Timestamptz()
 
-  productionHistories     ProductionHistory[]
-  reportTemplatesCreated  ReportTemplate[]
+  productionHistories    ProductionHistory[]
+  reportTemplatesCreated ReportTemplate[]
 
   @@map("users")
 }
 
 model Pallet {
-  id             String    @id @default(uuid())
+  id             String    @id @default(ulid())
   name           String    @db.VarChar(100)
   version        Int       @default(1)
   versionFromId  String?   @map("version_from_id")
@@ -48,7 +48,7 @@ model Pallet {
 }
 
 model ProductionHistory {
-  id                String           @id @default(uuid())
+  id                String           @id @default(ulid())
   userId            String           @map("user_id")
   palletId          String           @map("pallet_id")
   deliveredQuantity Int              @map("delivered_quantity")
@@ -66,7 +66,7 @@ model ProductionHistory {
 }
 
 model Customer {
-  id            String    @id @default(uuid())
+  id            String    @id @default(ulid())
   businessName  String    @map("business_name")
   corporateName String?   @map("corporate_name")
   createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz()
@@ -79,7 +79,7 @@ model Customer {
 }
 
 model Order {
-  id         String      @id @default(uuid())
+  id         String      @id @default(ulid())
   customerId String      @map("customer_id")
   status     OrderStatus
   deadline   DateTime    @db.Date()
@@ -94,7 +94,7 @@ model Order {
 }
 
 model OrderItem {
-  id                String    @id @default(uuid())
+  id                String    @id @default(ulid())
   orderId           String    @map("order_id")
   palletId          String    @map("pallet_id")
   quantityRequested Int       @map("quantity_requested")
@@ -110,7 +110,7 @@ model OrderItem {
 }
 
 model ReportTemplate {
-  id          String    @id @default(uuid())
+  id          String    @id @default(ulid())
   name        String    @unique
   widgets     Json
   createdById String?   @map("created_by_id")

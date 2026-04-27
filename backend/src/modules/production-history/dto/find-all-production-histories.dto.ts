@@ -1,4 +1,10 @@
-import { IsDateString, IsEnum, IsOptional, IsUUID } from 'class-validator';
+import {
+  IsDateString,
+  IsEnum,
+  IsOptional,
+  IsString,
+  Length,
+} from 'class-validator';
 import { ProductionStatus } from '@generated/prisma';
 
 export class FindAllProductionHistoriesDto {
@@ -15,7 +21,8 @@ export class FindAllProductionHistoriesDto {
   to?: string;
 
   @IsOptional()
-  @IsUUID('4')
+  @IsString()
+  @Length(26, 26)
   userId?: string;
 
   @IsOptional()

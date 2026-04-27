@@ -1,9 +1,16 @@
-import { IsDateString, IsEnum, IsOptional, IsUUID } from 'class-validator';
+import {
+  IsDateString,
+  IsEnum,
+  IsOptional,
+  IsString,
+  Length,
+} from 'class-validator';
 import { OrderStatus } from '@generated/prisma';
 
 export class UpdateOrderDto {
   @IsOptional()
-  @IsUUID()
+  @IsString()
+  @Length(26, 26)
   customerId?: string;
 
   @IsOptional()

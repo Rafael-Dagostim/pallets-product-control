@@ -6,7 +6,6 @@ import {
   Patch,
   Param,
   Delete,
-  ParseUUIDPipe,
   Query,
 } from '@nestjs/common';
 import { ApiBearerAuth } from '@nestjs/swagger';
@@ -59,14 +58,14 @@ export class ProductionHistoryController {
   }
 
   @Get(':id')
-  findOne(@Param('id', ParseUUIDPipe) id: string) {
+  findOne(@Param('id') id: string) {
     return this.findOneProductionHistory.execute(id);
   }
 
   @Patch(':id')
   @Roles(UserRole.ADMIN, UserRole.MANAGER)
   update(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id') id: string,
     @Body() dto: UpdateProductionHistoryDto,
     @User('role') role: UserRole,
   ) {
@@ -75,7 +74,7 @@ export class ProductionHistoryController {
 
   @Delete(':id')
   @Roles(UserRole.ADMIN)
-  remove(@Param('id', ParseUUIDPipe) id: string) {
+  remove(@Param('id') id: string) {
     return this.removeProductionHistory.execute(id);
   }
 }

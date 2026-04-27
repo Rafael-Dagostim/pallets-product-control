@@ -6,7 +6,6 @@ import {
   Patch,
   Param,
   Delete,
-  ParseUUIDPipe,
 } from '@nestjs/common';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { UserRole } from '@generated/prisma';
@@ -44,20 +43,20 @@ export class CustomersController {
   }
 
   @Get(':id')
-  findOne(@Param('id', ParseUUIDPipe) id: string) {
+  findOne(@Param('id') id: string) {
     return this.findOneCustomer.execute(id);
   }
 
   @Patch(':id')
   update(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id') id: string,
     @Body() dto: UpdateCustomerDto,
   ) {
     return this.updateCustomer.execute(id, dto);
   }
 
   @Delete(':id')
-  remove(@Param('id', ParseUUIDPipe) id: string) {
+  remove(@Param('id') id: string) {
     return this.removeCustomer.execute(id);
   }
 }

@@ -1,8 +1,9 @@
-import { ArrayMinSize, IsArray, IsUUID } from 'class-validator';
+import { ArrayMinSize, IsArray, IsString, Length } from 'class-validator';
 
 export class BulkPayProductionHistoryDto {
   @IsArray()
   @ArrayMinSize(1)
-  @IsUUID('4', { each: true })
+  @IsString({ each: true })
+  @Length(26, 26, { each: true })
   ids: string[];
 }
