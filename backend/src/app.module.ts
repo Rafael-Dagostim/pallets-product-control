@@ -9,6 +9,7 @@ import { CustomersModule } from './modules/customers/customers.module';
 import { OrderItemsModule } from './modules/order-items/order-items.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { ProductionHistoryModule } from './modules/production-history/production-history.module';
+import { ReportsModule } from './modules/reports/reports.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { ProductionHistoryModule } from './modules/production-history/production
     OrderItemsModule,
     OrdersModule,
     ProductionHistoryModule,
+    ReportsModule,
   ],
   providers: [
     {

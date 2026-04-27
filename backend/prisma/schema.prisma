@@ -10,7 +10,7 @@ datasource db {
 
 model User {
   id        String    @id @default(uuid())
-  name      String    @unique() @db.VarChar(100)
+  name      String    @db.VarChar(100)
   document  String    @unique() @db.VarChar(20)
   password  String
   salt      String
@@ -19,7 +19,8 @@ model User {
   updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
   deletedAt DateTime? @map("deleted_at") @db.Timestamptz()
 
-  productionHistories ProductionHistory[]
+  productionHistories     ProductionHistory[]
+  reportTemplatesCreated  ReportTemplate[]
 
   @@map("users")
 }
@@ -106,6 +107,20 @@ model OrderItem {
   pallet Pallet @relation(fields: [palletId], references: [id])
 
   @@map("order_items")
+}
+
+model ReportTemplate {
+  id          String    @id @default(uuid())
+  name        String    @unique
+  widgets     Json
+  createdById String?   @map("created_by_id")
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz()
+
+  createdBy User? @relation(fields: [createdById], references: [id])
+
+  @@map("report_templates")
 }
 
 enum UserRole {
