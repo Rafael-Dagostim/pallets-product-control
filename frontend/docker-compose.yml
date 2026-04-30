@@ -1,0 +1,14 @@
+services:
+  app:
+    container_name: pallets-frontend
+    image: pallets-frontend:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+    restart: always
+    ports:
+      - "${FRONTEND_PORT:-6060}:3000"
+    env_file:
+      - .env.production
