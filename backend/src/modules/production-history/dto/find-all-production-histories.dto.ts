@@ -10,10 +10,6 @@ import { ProductionStatus } from '@generated/prisma';
 export class FindAllProductionHistoriesDto {
   @IsOptional()
   @IsDateString()
-  date?: string;
-
-  @IsOptional()
-  @IsDateString()
   from?: string;
 
   @IsOptional()

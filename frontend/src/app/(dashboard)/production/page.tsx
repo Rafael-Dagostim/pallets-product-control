@@ -5,8 +5,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { format, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { toUTCDayRange } from "@/lib/date-range";
 import { PageHeader } from "@/components/shared/page-header";
 import { KanbanBoard, type KanbanColumnDef } from "@/components/shared/kanban-board";
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -66,13 +67,6 @@ const ADVANCE_LABEL: Partial<Record<ProductionStatus, string>> = {
   VERIFIED: "Marcar como Pago",
 };
 
-function toISODate(d: Date): string {
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
-}
-
 const createSchema = z.object({
   userId: z.string().min(1, "Selecione um colaborador"),
   palletId: z.string().min(1, "Selecione um palete"),
@@ -104,9 +98,7 @@ export default function ProductionPage() {
   const [observation, setObservation] = useState("");
 
   const today = useMemo(() => new Date(), []);
-  const todayISO = toISODate(today);
-  const selectedISO = toISODate(selectedDate);
-  const isToday = selectedISO === todayISO;
+  const isToday = isSameDay(selectedDate, today);
   const isAdmin = authUser?.role === "ADMIN";
   const isManager = authUser?.role === "MANAGER";
   const canCreate = isAdmin || isManager;
@@ -125,7 +117,7 @@ export default function ProductionPage() {
     setIsLoading(true);
     try {
       const [recordsData, palletsData, usersData] = await Promise.all([
-        productionHistoryService.getAll(selectedISO),
+        productionHistoryService.getAll(toUTCDayRange(selectedDate)),
         palletsService.getAll(),
         usersService.getAll().catch(() => []),
       ]);
@@ -140,7 +132,7 @@ export default function ProductionPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedISO]);
+  }, [selectedDate]);
 
   useEffect(() => {
     loadData();
@@ -162,7 +154,7 @@ export default function ProductionPage() {
 
   function openTransition(record: ProductionHistory) {
     setSelectedRecord(record);
-    setReformedQuantity(undefined);
+    setReformedQuantity(record.deliveredQuantity);
     setDetailOpen(false);
     setTransitionOpen(true);
   }

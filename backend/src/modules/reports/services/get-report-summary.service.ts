@@ -40,18 +40,6 @@ interface DetailRow {
   payableBRL: number;
 }
 
-function startOfDay(date: string): Date {
-  const d = new Date(`${date}T00:00:00`);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
-
-function nextDay(date: string): Date {
-  const d = startOfDay(date);
-  d.setDate(d.getDate() + 1);
-  return d;
-}
-
 function toISODate(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
@@ -67,12 +55,12 @@ export class GetReportSummaryService {
   constructor(private readonly prisma: PrismaService) {}
 
   async execute(filters: ReportFiltersDto): Promise<ReportSummary> {
-    const gte = startOfDay(filters.from);
-    const lt = nextDay(filters.to);
+    const gte = new Date(filters.from);
+    const lte = new Date(filters.to);
 
     const productionWhere: Prisma.ProductionHistoryWhereInput = {
       deletedAt: null,
-      createdAt: { gte, lt },
+      createdAt: { gte, lte },
       ...(filters.userId ? { userId: filters.userId } : {}),
       ...(filters.palletId ? { palletId: filters.palletId } : {}),
       status: { not: ProductionStatus.CANCELED },
@@ -80,7 +68,7 @@ export class GetReportSummaryService {
 
     const orderWhere: Prisma.OrderWhereInput = {
       deletedAt: null,
-      createdAt: { gte, lt },
+      createdAt: { gte, lte },
       ...(filters.userId
         ? {}
         : {}),
@@ -122,20 +110,21 @@ export class GetReportSummaryService {
     let reformCostBRL = 0;
 
     for (const p of productions) {
-      const net = p.deliveredQuantity - p.reformedQuantity;
-      palletsProduced += net;
+      const kept = p.reformedQuantity;
+      const lost = p.deliveredQuantity - p.reformedQuantity;
+      palletsProduced += kept;
       activeCollaborators.add(p.userId);
 
       const pallet = p.pallet ?? palletById.get(p.palletId);
       const productionCost = toNumber(pallet?.productionCost);
-      reformCostBRL += p.reformedQuantity * productionCost;
+      reformCostBRL += lost * productionCost;
 
-      palletBarMap.set(p.palletId, (palletBarMap.get(p.palletId) ?? 0) + net);
+      palletBarMap.set(p.palletId, (palletBarMap.get(p.palletId) ?? 0) + kept);
 
-      userBarQty.set(p.userId, (userBarQty.get(p.userId) ?? 0) + net);
+      userBarQty.set(p.userId, (userBarQty.get(p.userId) ?? 0) + kept);
       userBarPayable.set(
         p.userId,
-        (userBarPayable.get(p.userId) ?? 0) + net * productionCost,
+        (userBarPayable.get(p.userId) ?? 0) + kept * productionCost,
       );
 
       const date = toISODate(p.createdAt);
@@ -144,7 +133,7 @@ export class GetReportSummaryService {
         delivered: 0,
         reformed: 0,
       };
-      prev.produced += net;
+      prev.produced += kept;
       prev.delivered += p.deliveredQuantity;
       prev.reformed += p.reformedQuantity;
       timelineMap.set(date, prev);
@@ -197,7 +186,6 @@ export class GetReportSummaryService {
     const detailTable: DetailRow[] = productions.slice(0, 200).map((p) => {
       const pallet = p.pallet ?? palletById.get(p.palletId);
       const productionCost = toNumber(pallet?.productionCost);
-      const net = p.deliveredQuantity - p.reformedQuantity;
       return {
         id: p.id,
         createdAt: p.createdAt,
@@ -207,7 +195,7 @@ export class GetReportSummaryService {
         deliveredQuantity: p.deliveredQuantity,
         reformedQuantity: p.reformedQuantity,
         status: p.status,
-        payableBRL: net * productionCost,
+        payableBRL: p.reformedQuantity * productionCost,
       };
     });
 

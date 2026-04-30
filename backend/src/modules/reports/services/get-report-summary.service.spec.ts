@@ -59,23 +59,23 @@ describe('GetReportSummaryService', () => {
     prisma.user.findMany.mockResolvedValue([{ id: 'u1', name: 'Alice' }]);
 
     const summary = await service.execute({
-      from: '2026-04-01',
-      to: '2026-04-30',
+      from: '2026-04-01T03:00:00.000Z',
+      to: '2026-05-01T02:59:59.999Z',
     });
 
     expect(summary.kpis.ordersDelivered).toBe(1);
-    expect(summary.kpis.palletsProduced).toBe(8);
+    expect(summary.kpis.palletsProduced).toBe(2);
     expect(summary.kpis.salesTotalBRL).toBe(40);
-    expect(summary.kpis.reformCostBRL).toBe(6);
+    expect(summary.kpis.reformCostBRL).toBe(24);
     expect(summary.kpis.activeCollaborators).toBe(1);
     expect(summary.palletBar).toEqual([
-      { palletId: 'pal1', name: 'A', version: 1, qty: 8 },
+      { palletId: 'pal1', name: 'A', version: 1, qty: 2 },
     ]);
     expect(summary.userBar[0]).toMatchObject({
       userId: 'u1',
       name: 'Alice',
-      qty: 8,
-      payableBRL: 24,
+      qty: 2,
+      payableBRL: 6,
     });
     expect(summary.timeline).toHaveLength(1);
     expect(summary.orderDonut).toEqual(

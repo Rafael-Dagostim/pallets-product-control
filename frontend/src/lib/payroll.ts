@@ -1,9 +1,8 @@
 import type { ProductionHistory } from "@/services/production-history.service";
 
 export function calcPayable(entry: ProductionHistory): number {
-  const qty = entry.deliveredQuantity - entry.reformedQuantity;
   const unit = Number(entry.pallet?.productionCost ?? 0);
-  return qty * unit;
+  return entry.reformedQuantity * unit;
 }
 
 export interface PayrollRow {
@@ -25,7 +24,7 @@ export function aggregateByPallet(entries: ProductionHistory[]): PayrollSummary 
 
   for (const e of entries) {
     if (!e.pallet) continue;
-    const qty = e.deliveredQuantity - e.reformedQuantity;
+    const qty = e.reformedQuantity;
     if (qty <= 0) continue;
     const unit = Number(e.pallet.productionCost);
     const current = map.get(e.palletId);

@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { toUTCRange } from "@/lib/date-range";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -49,10 +50,6 @@ const STATUS_BADGE: Record<ProductionStatus, string> = {
   PAID: "bg-status-active/15 text-status-active",
 };
 
-function toISODate(d: Date): string {
-  return format(d, "yyyy-MM-dd");
-}
-
 function subDays(d: Date, days: number): Date {
   const copy = new Date(d);
   copy.setDate(copy.getDate() - days);
@@ -89,8 +86,7 @@ export default function UserPayrollPage() {
     try {
       const data = await productionHistoryService.getAll({
         userId,
-        from: toISODate(from),
-        to: toISODate(to),
+        ...toUTCRange(from, to),
         ...(status !== "ALL" ? { status } : {}),
       });
       setRecords(data);

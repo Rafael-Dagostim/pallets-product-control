@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { format } from "date-fns";
 import { Printer } from "lucide-react";
+import { toUTCRange } from "@/lib/date-range";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ReportFilters, type FilterState } from "@/components/reports/report-filters";
@@ -19,10 +19,6 @@ import {
 } from "@/services/reports.service";
 import { usersService, type User } from "@/services/users.service";
 import { palletsService, type Pallet } from "@/services/pallets.service";
-
-function toISODate(d: Date): string {
-  return format(d, "yyyy-MM-dd");
-}
 
 function subDays(d: Date, days: number): Date {
   const copy = new Date(d);
@@ -80,8 +76,7 @@ export default function ReportsPage() {
     setIsLoading(true);
     try {
       const data = await reportsService.getSummary({
-        from: toISODate(filters.from),
-        to: toISODate(filters.to),
+        ...toUTCRange(filters.from, filters.to),
         userId: filters.userId,
         palletId: filters.palletId,
       });
@@ -237,8 +232,7 @@ export default function ReportsPage() {
             <PrintHeader
               templateName={selectedTemplate.name}
               filters={{
-                from: toISODate(filters.from),
-                to: toISODate(filters.to),
+                ...toUTCRange(filters.from, filters.to),
                 userId: filters.userId,
                 palletId: filters.palletId,
               }}

@@ -37,7 +37,6 @@ export interface UpdateProductionHistoryDto {
 }
 
 export interface ProductionHistoryFilters {
-  date?: string;
   from?: string;
   to?: string;
   userId?: string;
@@ -55,15 +54,8 @@ function buildQuery(filters?: ProductionHistoryFilters): string {
 }
 
 export const productionHistoryService = {
-  getAll: (filters?: ProductionHistoryFilters | string) => {
-    const query =
-      typeof filters === "string"
-        ? filters
-          ? `?date=${filters}`
-          : ""
-        : buildQuery(filters);
-    return api.get<ProductionHistory[]>(`/production-history${query}`);
-  },
+  getAll: (filters?: ProductionHistoryFilters) =>
+    api.get<ProductionHistory[]>(`/production-history${buildQuery(filters)}`),
   getById: (id: string) =>
     api.get<ProductionHistory>(`/production-history/${id}`),
   create: (dto: CreateProductionHistoryDto) =>

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@core/database/database.service';
-import { ProductionStatus, UserRole, Prisma } from '@generated/prisma';
+import { UserRole, Prisma } from '@generated/prisma';
 import { ProductionHistoryEntity } from '../entities/production-history.entity';
 import { FindAllProductionHistoriesDto } from '../dto/find-all-production-histories.dto';
 
@@ -37,32 +37,11 @@ export class FindAllProductionHistoriesService {
 function buildDateFilter(
   filters: FindAllProductionHistoriesDto,
 ): Prisma.ProductionHistoryWhereInput {
-  if (filters.from || filters.to) {
-    const gte = filters.from ? startOfDay(filters.from) : undefined;
-    const lt = filters.to ? nextDay(filters.to) : undefined;
-    return { createdAt: { ...(gte && { gte }), ...(lt && { lt }) } };
-  }
-
-  const dayStart = parseDayStart(filters.date);
-  const dayEnd = new Date(dayStart);
-  dayEnd.setDate(dayEnd.getDate() + 1);
-  return { createdAt: { gte: dayStart, lt: dayEnd } };
-}
-
-function parseDayStart(date?: string): Date {
-  const base = date ? new Date(`${date}T00:00:00`) : new Date();
-  base.setHours(0, 0, 0, 0);
-  return base;
-}
-
-function startOfDay(date: string): Date {
-  const d = new Date(`${date}T00:00:00`);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
-
-function nextDay(date: string): Date {
-  const d = startOfDay(date);
-  d.setDate(d.getDate() + 1);
-  return d;
+  if (!filters.from && !filters.to) return {};
+  return {
+    createdAt: {
+      ...(filters.from && { gte: new Date(filters.from) }),
+      ...(filters.to && { lte: new Date(filters.to) }),
+    },
+  };
 }

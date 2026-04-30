@@ -52,9 +52,12 @@ describe('ProductionHistoryController', () => {
     expect(createPH.execute).toHaveBeenCalledWith(dto);
   });
 
-  it('delegates findAll with date query', async () => {
+  it('delegates findAll with from/to range', async () => {
     findAllPH.execute.mockResolvedValue([]);
-    const query = { date: '2026-04-24' };
+    const query = {
+      from: '2026-04-24T03:00:00.000Z',
+      to: '2026-04-25T02:59:59.999Z',
+    };
     await controller.findAll('user-1', UserRole.ADMIN, query);
     expect(findAllPH.execute).toHaveBeenCalledWith('user-1', UserRole.ADMIN, query);
   });
