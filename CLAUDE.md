@@ -8,26 +8,26 @@ Monorepo for a pallet production control system:
 - **backend/**: NestJS REST API (latest) with Prisma 7+ ORM and PostgreSQL
 - **frontend/**: Next.js app with shadcn/ui and Tailwind CSS
 
-Package manager: **pnpm**
+Package manager: **npm**
 
 ## Commands
 
 ### Backend (backend/)
 
 ```bash
-pnpm install                    # Install dependencies
-pnpm run start:dev              # Dev server with hot reload
-pnpm run build                  # Compile to dist/
-pnpm run test                   # Unit tests
-pnpm run test:e2e               # E2E tests
-pnpm run lint                   # ESLint with auto-fix
-pnpm run format                 # Prettier
+npm install                     # Install dependencies
+npm run start:dev               # Dev server with hot reload
+npm run build                   # Compile to dist/
+npm run test                    # Unit tests
+npm run test:e2e                # E2E tests
+npm run lint                    # ESLint with auto-fix
+npm run format                  # Prettier
 
 # Prisma
-pnpm prisma generate            # Generate client after schema changes
-pnpm prisma migrate dev         # Create and apply migrations
-pnpm prisma db push             # Push schema without migration
-pnpm prisma validate            # Validate schema syntax
+npx prisma generate             # Generate client after schema changes
+npx prisma migrate dev          # Create and apply migrations
+npx prisma db push              # Push schema without migration
+npx prisma validate             # Validate schema syntax
 
 # Docker
 docker-compose up               # Start API + PostgreSQL
@@ -37,9 +37,9 @@ docker-compose up --build       # Rebuild and start
 ### Frontend (frontend/)
 
 ```bash
-pnpm install
-pnpm run dev                    # Dev server
-pnpm run build                  # Production build
+npm install
+npm run dev                     # Dev server
+npm run build                   # Production build
 ```
 
 ## Architecture
@@ -114,7 +114,7 @@ Pallets use a self-referencing FK `versionFromId`:
   const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
   const prisma = new PrismaClient({ adapter });
   ```
-- Generated client is at `src/generated/prisma` (gitignored, regenerate with `pnpm exec prisma generate`)
+- Generated client is at `src/generated/prisma` (gitignored, regenerate with `npx prisma generate`)
 
 ### Import Aliases
 TypeScript path aliases are configured in `backend/tsconfig.json`:
@@ -196,7 +196,7 @@ Swagger docs available at `/docs` when API is running.
 Whenever backend code is added or modified (new service, controller, guard, exception, or changes to existing ones), **always check if tests need to be created or updated**:
 - **New service/controller/guard**: Create a corresponding `.spec.ts` file following existing patterns.
 - **Modified service/controller logic**: Update the existing `.spec.ts` to cover the new/changed behavior.
-- **Run `pnpm run test` in `backend/`** after any code change to verify all tests still pass.
+- **Run `npm run test` in `backend/`** after any code change to verify all tests still pass.
 
 ### Test Conventions
 - Test files live alongside source files as `<name>.spec.ts`

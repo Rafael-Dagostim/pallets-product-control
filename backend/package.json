@@ -17,18 +17,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "prisma": {
-    "seed": "tsx prisma/seed.ts"
-  },
-  "packageManager": "pnpm@10.25.0",
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "@nestjs/core",
-      "@prisma/engines",
-      "bcrypt",
-      "esbuild",
-      "prisma",
-      "unrs-resolver"
-    ]
+    "seed": "tsx src/prisma/seed.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.14",

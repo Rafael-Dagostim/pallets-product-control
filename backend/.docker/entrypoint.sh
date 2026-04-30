@@ -4,10 +4,10 @@ if [ ! -f ".env" ]; then
   cp .env.example .env
 fi
 
-pnpm install
+npm install
 
-pnpm exec prisma migrate dev --name init
-pnpm exec prisma generate
-pnpm exec prisma db seed
+npx prisma migrate dev --name init
+npx prisma generate
+npx prisma db seed
 
-pnpm run start:dev
+npm run start:dev
