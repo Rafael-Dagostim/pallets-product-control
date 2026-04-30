@@ -1,0 +1,46 @@
+services:
+  app:
+    container_name: pallets-api
+    image: pallets-api:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    restart: always
+    ports:
+      - "${API_PORT:-6050}:3000"
+    env_file:
+      - .env.production
+    environment:
+      DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - pallets-net
+
+  db:
+    container_name: pallets-db
+    image: postgres:17-alpine
+    restart: always
+    ports:
+      - "${DB_HOST_PORT:-6051}:5432"
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - pallets_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - pallets-net
+
+volumes:
+  pallets_db_data:
+
+networks:
+  pallets-net:
+    driver: bridge

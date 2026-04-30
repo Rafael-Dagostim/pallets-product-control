@@ -1,5 +1,15 @@
 node_modules
 dist
-.env
-.git
 coverage
+.env
+.env.*
+.git
+.gitignore
+.docker
+.vscode
+.claude
+test
+**/*.spec.ts
+**/__mocks__
+README.md
+CLAUDE.md
