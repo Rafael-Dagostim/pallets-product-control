@@ -5,7 +5,8 @@ coverage
 .env.*
 .git
 .gitignore
-.docker
+.docker/
+!.docker/entrypoint.sh
 .vscode
 .claude
 test
