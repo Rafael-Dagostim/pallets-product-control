@@ -22,24 +22,36 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import type { LucideIcon } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
+import type { UserRole } from "@/services/auth.service";
 
-const NAV_ITEMS = [
-  { href: "/pallets", label: "Paletes", icon: LayoutGrid },
-  { href: "/users", label: "Colaboradores", icon: Users },
-  { href: "/production", label: "Produção", icon: ClipboardList },
-  { href: "/orders", label: "Pedidos", icon: ShoppingCart },
-  { href: "/customers", label: "Clientes", icon: Building2 },
-  { href: "/reports", label: "Relatório", icon: BarChart3 },
+type NavItem = {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  roles: UserRole[];
+};
+
+const NAV_ITEMS: NavItem[] = [
+  { href: "/pallets", label: "Paletes", icon: LayoutGrid, roles: ["ADMIN", "MANAGER"] },
+  { href: "/users", label: "Colaboradores", icon: Users, roles: ["ADMIN"] },
+  { href: "/production", label: "Produção", icon: ClipboardList, roles: ["ADMIN", "MANAGER", "EMPLOYEE"] },
+  { href: "/orders", label: "Pedidos", icon: ShoppingCart, roles: ["ADMIN", "MANAGER"] },
+  { href: "/customers", label: "Clientes", icon: Building2, roles: ["ADMIN", "MANAGER"] },
+  { href: "/reports", label: "Relatório", icon: BarChart3, roles: ["ADMIN", "MANAGER"] },
 ];
-
-const MOBILE_MAIN = NAV_ITEMS.slice(0, 4);
-const MOBILE_MORE = NAV_ITEMS.slice(4);
 
 export function Navbar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const [sheetOpen, setSheetOpen] = useState(false);
+
+  const navItems = NAV_ITEMS.filter(
+    (item) => user && item.roles.includes(user.role),
+  );
+  const mobileMain = navItems.slice(0, 4);
+  const mobileMore = navItems.slice(4);
 
   const isActive = (href: string) => pathname.startsWith(href);
 
@@ -55,7 +67,7 @@ export function Navbar() {
         </Link>
 
         <div className="flex-1 flex flex-col gap-1 px-3 py-4">
-          {NAV_ITEMS.map((item) => {
+          {navItems.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.href);
             return (
@@ -92,7 +104,7 @@ export function Navbar() {
 
       {/* Mobile: Bottom bar */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 h-18 bg-secondary flex items-center justify-around px-2">
-        {MOBILE_MAIN.map((item) => {
+        {mobileMain.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.href);
           return (
@@ -118,7 +130,7 @@ export function Navbar() {
               suppressHydrationWarning
               className={cn(
                 "flex flex-col items-center gap-0.5 py-1 px-2",
-                MOBILE_MORE.some((i) => isActive(i.href))
+                mobileMore.some((i) => isActive(i.href))
                   ? "text-white"
                   : "text-white/50"
               )}
@@ -132,7 +144,7 @@ export function Navbar() {
               <SheetTitle>Menu</SheetTitle>
             </SheetHeader>
             <div className="grid grid-cols-2 gap-4 py-4">
-              {MOBILE_MORE.map((item) => {
+              {mobileMore.map((item) => {
                 const Icon = item.icon;
                 const active = isActive(item.href);
                 return (

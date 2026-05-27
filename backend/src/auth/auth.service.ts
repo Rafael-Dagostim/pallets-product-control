@@ -35,12 +35,9 @@ export class AuthService {
       throw new UnauthorizedException('Credenciais inválidas');
     }
 
-    const payload: JwtPayload = { userId: user.id, role: user.role };
-
     return {
       user: new UserEntity(user),
-      token: this.jwtService.sign(payload),
-      refresh: this.jwtService.sign(payload, { expiresIn: '7d' }),
+      ...this.signTokens(user.id, user.role),
     };
   }
 
@@ -53,6 +50,11 @@ export class AuthService {
       throw new UnauthorizedException('Token de refresh inválido ou expirado');
     }
 
+    // Only a token explicitly minted as a refresh token may be exchanged here.
+    if (payload.type !== 'refresh') {
+      throw new UnauthorizedException('Token de refresh inválido ou expirado');
+    }
+
     const user = await this.prisma.user.findFirst({
       where: { id: payload.userId, deletedAt: null },
     });
@@ -61,11 +63,17 @@ export class AuthService {
       throw new UnauthorizedException('Usuário não encontrado');
     }
 
-    const newPayload: JwtPayload = { userId: user.id, role: user.role };
+    return this.signTokens(user.id, user.role);
+  }
 
+  private signTokens(userId: string, role: JwtPayload['role']) {
+    const base = { userId, role };
     return {
-      token: this.jwtService.sign(newPayload),
-      refresh: this.jwtService.sign(newPayload, { expiresIn: '7d' }),
+      token: this.jwtService.sign({ ...base, type: 'access' }),
+      refresh: this.jwtService.sign(
+        { ...base, type: 'refresh' },
+        { expiresIn: '7d' },
+      ),
     };
   }
 }

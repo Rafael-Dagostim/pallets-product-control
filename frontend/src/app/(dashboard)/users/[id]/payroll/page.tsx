@@ -19,6 +19,7 @@ import { DatePickerField } from "@/components/shared/form-fields/date-picker-fie
 import { DataTable, type Column } from "@/components/shared/data-table";
 import { PayrollSummaryModal } from "@/components/payroll/payroll-summary-modal";
 import { downloadPayrollPdf } from "@/components/payroll/payroll-pdf";
+import { useRequireRole } from "@/hooks/use-require-role";
 import { maskCurrencyBRL } from "@/lib/masks";
 import { calcPayable, aggregateByPallet } from "@/lib/payroll";
 import { usersService, type User } from "@/services/users.service";
@@ -57,6 +58,7 @@ function subDays(d: Date, days: number): Date {
 }
 
 export default function UserPayrollPage() {
+  const { isAllowed, isReady } = useRequireRole(["ADMIN"]);
   const router = useRouter();
   const params = useParams<{ id: string }>();
   const userId = params.id;
@@ -106,12 +108,12 @@ export default function UserPayrollPage() {
   }, [userId, from, to, status]);
 
   useEffect(() => {
-    loadUser();
-  }, [loadUser]);
+    if (isAllowed) loadUser();
+  }, [loadUser, isAllowed]);
 
   useEffect(() => {
-    loadRecords();
-  }, [loadRecords]);
+    if (isAllowed) loadRecords();
+  }, [loadRecords, isAllowed]);
 
   const verifiedInPeriod = useMemo(
     () => records.filter((r) => r.status === "VERIFIED"),
@@ -241,6 +243,8 @@ export default function UserPayrollPage() {
       ),
     },
   ];
+
+  if (!isReady || !isAllowed) return null;
 
   return (
     <div className="h-full flex flex-col min-h-0">

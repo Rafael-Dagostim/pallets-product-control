@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { FileText, Pencil, Trash2 } from "lucide-react";
+import { FileText, Pencil, RefreshCw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
 import { DataTable, type Column } from "@/components/shared/data-table";
@@ -28,11 +28,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { DocumentInput } from "@/components/shared/form-fields";
+import { PasswordInput } from "@/components/shared/form-fields";
 import { usersService, type User } from "@/services/users.service";
 import type { UserRole } from "@/services/auth.service";
-import { maskCPF } from "@/lib/masks";
-import { cpfSchema } from "@/lib/validators";
+import { generateLogin } from "@/lib/generate-login";
+import { useRequireRole } from "@/hooks/use-require-role";
 
 const ROLE_LABELS: Record<string, string> = {
   ADMIN: "Administrador",
@@ -48,7 +48,10 @@ const ROLES: { value: UserRole; label: string }[] = [
 
 const userSchema = z.object({
   name: z.string().min(2, "Informe o nome completo"),
-  document: cpfSchema,
+  login: z
+    .string()
+    .min(1, "Login é obrigatório")
+    .max(20, "Login deve ter no máximo 20 caracteres"),
   password: z
     .string()
     .refine(
@@ -61,6 +64,7 @@ const userSchema = z.object({
 type FormValues = z.infer<typeof userSchema>;
 
 export default function UsersPage() {
+  const { isAllowed, isReady } = useRequireRole(["ADMIN"]);
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -71,7 +75,7 @@ export default function UsersPage() {
 
   const form = useForm<FormValues>({
     resolver: zodResolver(userSchema),
-    defaultValues: { name: "", document: "", password: "", role: "EMPLOYEE" },
+    defaultValues: { name: "", login: "", password: "", role: "EMPLOYEE" },
   });
 
   const loadUsers = useCallback(async () => {
@@ -88,12 +92,12 @@ export default function UsersPage() {
   }, []);
 
   useEffect(() => {
-    loadUsers();
-  }, [loadUsers]);
+    if (isAllowed) loadUsers();
+  }, [loadUsers, isAllowed]);
 
   function openCreate() {
     setSelected(null);
-    form.reset({ name: "", document: "", password: "", role: "EMPLOYEE" });
+    form.reset({ name: "", login: "", password: "", role: "EMPLOYEE" });
     setModalOpen(true);
   }
 
@@ -101,7 +105,7 @@ export default function UsersPage() {
     setSelected(user);
     form.reset({
       name: user.name,
-      document: user.document,
+      login: user.login,
       password: "",
       role: user.role,
     });
@@ -117,7 +121,7 @@ export default function UsersPage() {
       if (selected) {
         const dto: Record<string, string> = {
           name: values.name,
-          document: values.document,
+          login: values.login,
           role: values.role,
         };
         if (values.password) dto.password = values.password;
@@ -126,7 +130,7 @@ export default function UsersPage() {
       } else {
         await usersService.create({
           name: values.name,
-          document: values.document,
+          login: values.login,
           password: values.password,
           role: values.role,
         });
@@ -160,7 +164,7 @@ export default function UsersPage() {
 
   const columns: Column<User>[] = [
     { key: "name", label: "Nome", render: (u) => <span className="font-medium">{u.name}</span> },
-    { key: "document", label: "CPF", hideOnMobile: true, render: (u) => maskCPF(u.document) },
+    { key: "login", label: "Login", hideOnMobile: true, render: (u) => u.login },
     { key: "role", label: "Função", render: (u) => ROLE_LABELS[u.role] || u.role },
     {
       key: "actions",
@@ -196,6 +200,8 @@ export default function UsersPage() {
       ),
     },
   ];
+
+  if (!isReady || !isAllowed) return null;
 
   return (
     <>
@@ -233,13 +239,34 @@ export default function UsersPage() {
 
             <FormField
               control={form.control}
-              name="document"
+              name="login"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>CPF</FormLabel>
-                  <FormControl>
-                    <DocumentInput kind="cpf" {...field} />
-                  </FormControl>
+                  <FormLabel>Login</FormLabel>
+                  <div className="flex gap-2">
+                    <FormControl>
+                      <Input
+                        autoComplete="off"
+                        placeholder="EX: RAFA123"
+                        maxLength={20}
+                        className="uppercase"
+                        {...field}
+                        onChange={(e) => field.onChange(e.target.value.toUpperCase())}
+                      />
+                    </FormControl>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      title="Gerar login"
+                      onClick={() => {
+                        const name = form.getValues("name");
+                        field.onChange(generateLogin(name));
+                      }}
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                    </Button>
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}
@@ -254,8 +281,7 @@ export default function UsersPage() {
                     {selected ? "Nova senha" : "Senha"}
                   </FormLabel>
                   <FormControl>
-                    <Input
-                      type="password"
+                    <PasswordInput
                       autoComplete="new-password"
                       placeholder={selected ? "Deixe em branco para manter" : "Mínimo 6 caracteres"}
                       {...field}

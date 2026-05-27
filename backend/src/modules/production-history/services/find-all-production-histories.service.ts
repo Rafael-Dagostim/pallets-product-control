@@ -26,7 +26,10 @@ export class FindAllProductionHistoriesService {
 
     const records = await this.prisma.productionHistory.findMany({
       where,
-      include: { user: true, pallet: true },
+      include: {
+        user: true,
+        pallet: { select: { id: true, name: true, version: true } },
+      },
       orderBy: { createdAt: 'desc' },
     });
 

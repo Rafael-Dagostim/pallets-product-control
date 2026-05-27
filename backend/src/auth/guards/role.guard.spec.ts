@@ -26,18 +26,18 @@ describe('RoleGuard', () => {
     expect(guard.canActivate(createContext())).toBe(true);
   });
 
-  it('should return true when no @Roles decorator', () => {
+  it('should DENY by default when no @Roles decorator (deny-by-default)', () => {
     (reflector.getAllAndOverride as jest.Mock)
       .mockReturnValueOnce(false)  // IS_PUBLIC_KEY
       .mockReturnValueOnce(null);  // ROLES_KEY
-    expect(guard.canActivate(createContext())).toBe(true);
+    expect(guard.canActivate(createContext())).toBe(false);
   });
 
-  it('should return true when empty roles array', () => {
+  it('should DENY by default when empty roles array', () => {
     (reflector.getAllAndOverride as jest.Mock)
       .mockReturnValueOnce(false)
       .mockReturnValueOnce([]);
-    expect(guard.canActivate(createContext())).toBe(true);
+    expect(guard.canActivate(createContext())).toBe(false);
   });
 
   it('should return true when user role matches', () => {

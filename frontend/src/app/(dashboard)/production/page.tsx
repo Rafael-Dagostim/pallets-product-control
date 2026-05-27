@@ -118,7 +118,10 @@ export default function ProductionPage() {
     try {
       const [recordsData, palletsData, usersData] = await Promise.all([
         productionHistoryService.getAll(toUTCDayRange(selectedDate)),
-        palletsService.getAll(),
+        // Pallet catalog (with pricing) is restricted to ADMIN/MANAGER on the API
+        // and is only needed to populate the create form. EMPLOYEE reads pallet
+        // names from the production records themselves.
+        canCreate ? palletsService.getAll().catch(() => []) : Promise.resolve([]),
         usersService.getAll().catch(() => []),
       ]);
       setRecords(recordsData);
@@ -132,7 +135,7 @@ export default function ProductionPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedDate]);
+  }, [selectedDate, canCreate]);
 
   useEffect(() => {
     loadData();

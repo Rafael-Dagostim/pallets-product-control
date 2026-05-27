@@ -19,6 +19,7 @@ import {
 } from "@/services/reports.service";
 import { usersService, type User } from "@/services/users.service";
 import { palletsService, type Pallet } from "@/services/pallets.service";
+import { useRequireRole } from "@/hooks/use-require-role";
 
 function subDays(d: Date, days: number): Date {
   const copy = new Date(d);
@@ -27,6 +28,7 @@ function subDays(d: Date, days: number): Date {
 }
 
 export default function ReportsPage() {
+  const { isAllowed, isReady } = useRequireRole(["ADMIN", "MANAGER"]);
   const [filters, setFilters] = useState<FilterState>(() => ({
     from: subDays(new Date(), 30),
     to: new Date(),
@@ -89,12 +91,12 @@ export default function ReportsPage() {
   }, [filters]);
 
   useEffect(() => {
-    loadReferenceData();
-  }, [loadReferenceData]);
+    if (isAllowed) loadReferenceData();
+  }, [loadReferenceData, isAllowed]);
 
   useEffect(() => {
-    loadSummary();
-  }, [loadSummary]);
+    if (isAllowed) loadSummary();
+  }, [loadSummary, isAllowed]);
 
   async function handleSubmitTemplate(dto: {
     name: string;
@@ -158,6 +160,8 @@ export default function ReportsPage() {
         return p ? `${p.name} v${p.version}` : undefined;
       })()
     : undefined;
+
+  if (!isReady || !isAllowed) return null;
 
   return (
     <div className="h-full flex flex-col min-h-0">

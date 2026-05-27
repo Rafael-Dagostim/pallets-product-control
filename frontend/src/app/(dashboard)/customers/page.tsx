@@ -20,10 +20,11 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { customersService, type Customer } from "@/services/customers.service";
+import { useRequireRole } from "@/hooks/use-require-role";
 
 const customerSchema = z.object({
   businessName: z.string().min(2, "Informe o nome fantasia"),
-  corporateName: z.string().optional().or(z.literal("")),
+  additionalInfo: z.string().optional().or(z.literal("")),
 });
 
 type FormValues = z.infer<typeof customerSchema>;
@@ -35,14 +36,16 @@ const columns: Column<Customer>[] = [
     render: (c) => <span className="font-medium">{c.businessName}</span>,
   },
   {
-    key: "corporateName",
-    label: "Razão Social",
+    key: "additionalInfo",
+    label: "Informações",
     hideOnMobile: true,
-    render: (c) => c.corporateName || "—",
+    render: (c) => c.additionalInfo || "—",
   },
 ];
 
 export default function CustomersPage() {
+  const { isAllowed, isReady } = useRequireRole(["ADMIN", "MANAGER"]);
+
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -52,7 +55,7 @@ export default function CustomersPage() {
 
   const form = useForm<FormValues>({
     resolver: zodResolver(customerSchema),
-    defaultValues: { businessName: "", corporateName: "" },
+    defaultValues: { businessName: "", additionalInfo: "" },
   });
 
   const loadCustomers = useCallback(async () => {
@@ -69,12 +72,12 @@ export default function CustomersPage() {
   }, []);
 
   useEffect(() => {
-    loadCustomers();
-  }, [loadCustomers]);
+    if (isAllowed) loadCustomers();
+  }, [loadCustomers, isAllowed]);
 
   function openCreate() {
     setSelected(null);
-    form.reset({ businessName: "", corporateName: "" });
+    form.reset({ businessName: "", additionalInfo: "" });
     setModalOpen(true);
   }
 
@@ -82,7 +85,7 @@ export default function CustomersPage() {
     setSelected(customer);
     form.reset({
       businessName: customer.businessName,
-      corporateName: customer.corporateName ?? "",
+      additionalInfo: customer.additionalInfo ?? "",
     });
     setModalOpen(true);
   }
@@ -91,7 +94,7 @@ export default function CustomersPage() {
     try {
       const dto = {
         businessName: values.businessName,
-        corporateName: values.corporateName || undefined,
+        additionalInfo: values.additionalInfo || undefined,
       };
       if (selected) {
         await customersService.update(selected.id, dto);
@@ -125,6 +128,8 @@ export default function CustomersPage() {
       setIsDeleting(false);
     }
   }
+
+  if (!isReady || !isAllowed) return null;
 
   return (
     <>
@@ -162,10 +167,10 @@ export default function CustomersPage() {
 
             <FormField
               control={form.control}
-              name="corporateName"
+              name="additionalInfo"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Razão social</FormLabel>
+                  <FormLabel>Informações adicionais</FormLabel>
                   <FormControl>
                     <Input placeholder="Opcional" {...field} />
                   </FormControl>

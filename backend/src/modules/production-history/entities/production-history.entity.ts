@@ -1,6 +1,12 @@
 import { ProductionHistory, ProductionStatus } from '@generated/prisma';
 import { UserEntity } from '@modules/users/entities/user.entity';
-import { PalletEntity } from '@modules/pallets/entities/pallet.entity';
+
+/** Minimal pallet projection embedded in production responses (no pricing). */
+export type ProductionPalletSummary = {
+  id: string;
+  name: string;
+  version: number;
+};
 
 export class ProductionHistoryEntity implements ProductionHistory {
   id: string;
@@ -15,11 +21,10 @@ export class ProductionHistoryEntity implements ProductionHistory {
   deletedAt: Date | null;
 
   user?: UserEntity;
-  pallet?: PalletEntity;
+  pallet?: ProductionPalletSummary;
 
   constructor(partial: Partial<ProductionHistoryEntity>) {
     const user = partial.user && new UserEntity(partial.user);
-    const pallet = partial.pallet && new PalletEntity(partial.pallet);
-    Object.assign(this, { ...partial, user, pallet });
+    Object.assign(this, { ...partial, user });
   }
 }

@@ -14,8 +14,12 @@ export function getRefreshToken(): string | undefined {
 }
 
 export function setTokens(token: string, refresh: string) {
-  Cookies.set(TOKEN_KEY, token, { sameSite: "lax" });
-  Cookies.set(REFRESH_KEY, refresh, { sameSite: "lax" });
+  // Only mark cookies `secure` over HTTPS so local http dev still works.
+  const secure =
+    typeof window !== "undefined" && window.location.protocol === "https:";
+  const opts = { sameSite: "lax", secure } as const;
+  Cookies.set(TOKEN_KEY, token, opts);
+  Cookies.set(REFRESH_KEY, refresh, opts);
 }
 
 export function clearTokens() {

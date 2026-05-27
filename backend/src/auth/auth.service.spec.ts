@@ -45,10 +45,9 @@ describe('AuthService', () => {
       prisma.user.findFirst.mockResolvedValue({
         id: 'user-1',
         name: 'Test',
-        document: '12345678900',
+        login: 'TEST123',
         role: 'ADMIN',
         password: hashedPassword,
-        salt,
         createdAt: new Date(),
         updatedAt: new Date(),
         deletedAt: null,
@@ -57,7 +56,7 @@ describe('AuthService', () => {
       jwtService.sign.mockReturnValue('jwt-token');
 
       const result = await service.login({
-        document: '12345678900',
+        login: 'TEST123',
         password: 'password123',
       });
 
@@ -66,13 +65,23 @@ describe('AuthService', () => {
       expect(result.token).toBe('jwt-token');
       expect(result.refresh).toBe('jwt-token');
       expect(jwtService.sign).toHaveBeenCalledTimes(2);
+      expect(jwtService.sign).toHaveBeenNthCalledWith(1, {
+        userId: 'user-1',
+        role: 'ADMIN',
+        type: 'access',
+      });
+      expect(jwtService.sign).toHaveBeenNthCalledWith(
+        2,
+        { userId: 'user-1', role: 'ADMIN', type: 'refresh' },
+        { expiresIn: '7d' },
+      );
     });
 
     it('should throw UnauthorizedException when user not found', async () => {
       prisma.user.findFirst.mockResolvedValue(null);
 
       await expect(
-        service.login({ document: '00000000000', password: 'any' }),
+        service.login({ login: 'ADMIN', password: 'any' }),
       ).rejects.toThrow(UnauthorizedException);
     });
 
@@ -83,18 +92,21 @@ describe('AuthService', () => {
       prisma.user.findFirst.mockResolvedValue({
         id: 'user-1',
         password: hashedPassword,
-        salt,
       });
 
       await expect(
-        service.login({ document: '12345678900', password: 'wrong' }),
+        service.login({ login: 'TEST123', password: 'wrong' }),
       ).rejects.toThrow(UnauthorizedException);
     });
   });
 
   describe('refreshToken', () => {
     it('should return new token and refresh on valid refresh token', async () => {
-      jwtService.verify.mockReturnValue({ userId: 'user-1', role: 'ADMIN' });
+      jwtService.verify.mockReturnValue({
+        userId: 'user-1',
+        role: 'ADMIN',
+        type: 'refresh',
+      });
       prisma.user.findFirst.mockResolvedValue({
         id: 'user-1',
         name: 'Test',
@@ -111,6 +123,29 @@ describe('AuthService', () => {
       expect(result.token).toBe('new-token');
       expect(result.refresh).toBe('new-token');
       expect(jwtService.sign).toHaveBeenCalledTimes(2);
+      expect(jwtService.sign).toHaveBeenNthCalledWith(1, {
+        userId: 'user-1',
+        role: 'ADMIN',
+        type: 'access',
+      });
+      expect(jwtService.sign).toHaveBeenNthCalledWith(
+        2,
+        { userId: 'user-1', role: 'ADMIN', type: 'refresh' },
+        { expiresIn: '7d' },
+      );
+    });
+
+    it('should reject a non-refresh token (e.g. an access token)', async () => {
+      jwtService.verify.mockReturnValue({
+        userId: 'user-1',
+        role: 'ADMIN',
+        type: 'access',
+      });
+
+      await expect(
+        service.refreshToken({ token: 'access-token' }),
+      ).rejects.toThrow(UnauthorizedException);
+      expect(prisma.user.findFirst).not.toHaveBeenCalled();
     });
 
     it('should throw UnauthorizedException on invalid/expired token', async () => {
@@ -124,7 +159,11 @@ describe('AuthService', () => {
     });
 
     it('should throw UnauthorizedException when user no longer exists', async () => {
-      jwtService.verify.mockReturnValue({ userId: 'deleted-user', role: 'ADMIN' });
+      jwtService.verify.mockReturnValue({
+        userId: 'deleted-user',
+        role: 'ADMIN',
+        type: 'refresh',
+      });
       prisma.user.findFirst.mockResolvedValue(null);
 
       await expect(

@@ -36,7 +36,10 @@ export class CreateProductionHistoryService {
         deliveredQuantity: dto.deliveredQuantity,
         status: ProductionStatus.OPEN,
       },
-      include: { user: true, pallet: true },
+      include: {
+        user: true,
+        pallet: { select: { id: true, name: true, version: true } },
+      },
     });
 
     return new ProductionHistoryEntity(record);

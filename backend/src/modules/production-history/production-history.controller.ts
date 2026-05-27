@@ -49,6 +49,7 @@ export class ProductionHistoryController {
   }
 
   @Get()
+  @Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.EMPLOYEE)
   findAll(
     @User('userId') userId: string,
     @User('role') role: UserRole,
@@ -58,8 +59,13 @@ export class ProductionHistoryController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.findOneProductionHistory.execute(id);
+  @Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.EMPLOYEE)
+  findOne(
+    @Param('id') id: string,
+    @User('userId') userId: string,
+    @User('role') role: UserRole,
+  ) {
+    return this.findOneProductionHistory.execute(id, userId, role);
   }
 
   @Patch(':id')

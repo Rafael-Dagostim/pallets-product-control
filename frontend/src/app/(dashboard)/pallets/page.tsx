@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/form";
 import { CurrencyInput } from "@/components/shared/form-fields";
 import { palletsService, type Pallet } from "@/services/pallets.service";
+import { useRequireRole } from "@/hooks/use-require-role";
 
 function formatBRL(value: unknown): string {
   const num = parseFloat(String(value));
@@ -44,6 +45,7 @@ const palletSchema = z
 type FormValues = z.infer<typeof palletSchema>;
 
 export default function PalletsPage() {
+  const { isAllowed, isReady } = useRequireRole(["ADMIN", "MANAGER"]);
   const [pallets, setPallets] = useState<Pallet[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -76,8 +78,8 @@ export default function PalletsPage() {
   }, []);
 
   useEffect(() => {
-    loadPallets();
-  }, [loadPallets]);
+    if (isAllowed) loadPallets();
+  }, [loadPallets, isAllowed]);
 
   function openCreate() {
     setSelected(null);
@@ -199,6 +201,8 @@ export default function PalletsPage() {
     if (versionFromId) return "Nova Versão";
     return "Novo Palete";
   }
+
+  if (!isReady || !isAllowed) return null;
 
   return (
     <>

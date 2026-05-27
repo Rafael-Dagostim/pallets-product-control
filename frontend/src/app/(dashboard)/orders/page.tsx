@@ -40,6 +40,7 @@ import {
 } from "@/services/orders.service";
 import { customersService, type Customer } from "@/services/customers.service";
 import { palletsService, type Pallet } from "@/services/pallets.service";
+import { useRequireRole } from "@/hooks/use-require-role";
 
 const STATUS_LABELS: Record<OrderStatus, string> = {
   OPEN: "Aberto",
@@ -82,6 +83,7 @@ const createSchema = z.object({
 type FormValues = z.infer<typeof createSchema>;
 
 export default function OrdersPage() {
+  const { isAllowed, isReady } = useRequireRole(["ADMIN", "MANAGER"]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [pallets, setPallets] = useState<Pallet[]>([]);
@@ -128,8 +130,8 @@ export default function OrdersPage() {
   }, []);
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    if (isAllowed) loadData();
+  }, [loadData, isAllowed]);
 
   function handleCardClick(order: Order) {
     setSelectedOrder(order);
@@ -235,6 +237,8 @@ export default function OrdersPage() {
     value: p.id,
     label: `${p.name} (v${p.version})`,
   }));
+
+  if (!isReady || !isAllowed) return null;
 
   if (isLoading) {
     return (

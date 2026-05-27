@@ -29,8 +29,8 @@ describe('UpdateProductionHistoryService', () => {
     createdAt: new Date(), updatedAt: new Date(), deletedAt: null,
   };
   const userFixture = {
-    id: 'u-1', name: 'A', document: '111', role: 'EMPLOYEE',
-    password: 'h', salt: 's',
+    id: 'u-1', name: 'A', login: 'AAA111', role: 'EMPLOYEE',
+    password: 'h',
     createdAt: new Date(), updatedAt: new Date(), deletedAt: null,
   };
 
@@ -89,7 +89,10 @@ describe('UpdateProductionHistoryService', () => {
     expect(prisma.productionHistory.update).toHaveBeenCalledWith({
       where: { id: 'ph-1' },
       data: { status: 'VERIFIED', reformedQuantity: 7 },
-      include: { user: true, pallet: true },
+      include: {
+        user: true,
+        pallet: { select: { id: true, name: true, version: true } },
+      },
     });
     expect(result.status).toBe('VERIFIED');
   });
@@ -134,7 +137,10 @@ describe('UpdateProductionHistoryService', () => {
     expect(prisma.productionHistory.update).toHaveBeenCalledWith({
       where: { id: 'ph-1' },
       data: { status: 'CANCELED', observation: 'motivo' },
-      include: { user: true, pallet: true },
+      include: {
+        user: true,
+        pallet: { select: { id: true, name: true, version: true } },
+      },
     });
     expect(result.status).toBe('CANCELED');
   });

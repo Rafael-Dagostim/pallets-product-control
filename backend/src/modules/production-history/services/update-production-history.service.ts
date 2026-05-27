@@ -85,7 +85,10 @@ export class UpdateProductionHistoryService {
     const record = await this.prisma.productionHistory.update({
       where: { id },
       data,
-      include: { user: true, pallet: true },
+      include: {
+        user: true,
+        pallet: { select: { id: true, name: true, version: true } },
+      },
     });
 
     return new ProductionHistoryEntity(record);

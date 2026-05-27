@@ -32,8 +32,8 @@ describe('CreateProductionHistoryService', () => {
 
   function userFixture(role: 'EMPLOYEE' | 'MANAGER' | 'ADMIN') {
     return {
-      id: 'emp-1', name: 'A', document: '111', role,
-      password: 'h', salt: 's',
+      id: 'emp-1', name: 'A', login: 'AAA111', role,
+      password: 'h',
       createdAt: new Date(), updatedAt: new Date(), deletedAt: null,
     };
   }
@@ -53,7 +53,10 @@ describe('CreateProductionHistoryService', () => {
     });
     expect(prisma.productionHistory.create).toHaveBeenCalledWith({
       data: { userId: 'emp-1', palletId: 'p-1', deliveredQuantity: 10, status: 'OPEN' },
-      include: { user: true, pallet: true },
+      include: {
+        user: true,
+        pallet: { select: { id: true, name: true, version: true } },
+      },
     });
     expect(result.status).toBe('OPEN');
   });

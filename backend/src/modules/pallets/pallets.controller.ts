@@ -38,11 +38,13 @@ export class PalletsController {
   }
 
   @Get()
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
   findAll() {
     return this.findAllPallets.execute();
   }
 
   @Get(':id')
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
   findOne(@Param('id') id: string) {
     return this.findOnePallet.execute(id);
   }

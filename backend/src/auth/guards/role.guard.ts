@@ -22,8 +22,9 @@ export class RoleGuard implements CanActivate {
       [context.getHandler(), context.getClass()],
     );
 
+    // Deny-by-default: a non-public route without an explicit @Roles() is forbidden.
     if (!requiredRoles || requiredRoles.length === 0) {
-      return true;
+      return false;
     }
 
     const { role } = context.switchToHttp().getRequest().user;

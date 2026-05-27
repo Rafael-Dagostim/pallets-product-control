@@ -62,9 +62,10 @@ describe('ProductionHistoryController', () => {
     expect(findAllPH.execute).toHaveBeenCalledWith('user-1', UserRole.ADMIN, query);
   });
 
-  it('delegates findOne', async () => {
+  it('delegates findOne with actor id and role', async () => {
     findOnePH.execute.mockResolvedValue({ id: '1' });
-    expect(await controller.findOne('1')).toEqual({ id: '1' });
+    expect(await controller.findOne('1', 'user-1', UserRole.EMPLOYEE)).toEqual({ id: '1' });
+    expect(findOnePH.execute).toHaveBeenCalledWith('1', 'user-1', UserRole.EMPLOYEE);
   });
 
   it('delegates update with role', async () => {
