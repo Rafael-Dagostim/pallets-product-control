@@ -2,19 +2,19 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Lock } from "lucide-react";
+import { Lock, User } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { DocumentInput } from "@/components/shared/form-fields";
+import { PasswordInput } from "@/components/shared/form-fields";
 import { PalletLogo } from "@/components/shared/pallet-logo";
 import { authService } from "@/services/auth.service";
 import { cn } from "@/lib/utils";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [document, setDocument] = useState("");
+  const [loginId, setLoginId] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -25,7 +25,7 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      await authService.login(document, password);
+      await authService.login(loginId, password);
       router.push("/production");
     } catch {
       setError("Credenciais inválidas. Verifique seus dados.");
@@ -71,31 +71,34 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="document">CPF</Label>
-              <DocumentInput
-                id="document"
-                kind="cpf"
-                value={document}
-                onChange={setDocument}
-                autoComplete="username"
-              />
+              <Label htmlFor="login">Login</Label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                <Input
+                  id="login"
+                  type="text"
+                  placeholder="EX: RAFA123"
+                  className="pl-9 uppercase"
+                  maxLength={20}
+                  value={loginId}
+                  onChange={(e) => setLoginId(e.target.value.toUpperCase())}
+                  autoComplete="username"
+                  required
+                />
+              </div>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="password">Senha</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••"
-                  className="pl-9"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  autoComplete="current-password"
-                />
-              </div>
+              <PasswordInput
+                id="password"
+                leftIcon={<Lock className="size-4" />}
+                placeholder="••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                autoComplete="current-password"
+              />
             </div>
 
             {error && (
