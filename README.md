@@ -1,74 +1,73 @@
 # Pallets Product Control
 
-Sistema de controle de produção de paletes — gerencia colaboradores, tipos de
-palete (com versionamento e custos), histórico de produção, clientes, pedidos e
-relatórios/folha de pagamento.
+Pallet production control system — manages employees, pallet types (with
+versioning and costs), production history, customers, orders, and
+reports/payroll.
 
-Monorepo com **API REST em NestJS** (Prisma 7 + PostgreSQL) e **frontend em
-Next.js** (shadcn/ui + Tailwind).
+Monorepo with a **NestJS REST API** (Prisma 7 + PostgreSQL) and a **Next.js
+frontend** (shadcn/ui + Tailwind).
 
-## Funcionalidades
+## Features
 
-- **Autenticação JWT** com `login` em maiúsculas + senha (access token curto +
-  refresh token de tipo separado).
-- **Controle de acesso por papel**: `ADMIN`, `MANAGER`, `EMPLOYEE`
-  (deny-by-default no backend + navbar/rotas guardadas no frontend).
-- **Paletes**: catálogo com versionamento (auto-FK) e precificação
-  (compra / produção / venda).
-- **Produção**: registro de quanto cada colaborador produziu, com workflow de
-  status (`OPEN → VERIFIED → PAID/CANCELED`); colaborador só vê os próprios
-  registros.
-- **Clientes & Pedidos**: pedidos com itens (quantidade pedida vs. produzida) e
-  workflow de status.
-- **Relatórios & folha de pagamento** por período/colaborador.
-- **Soft delete** em todas as entidades (`deletedAt`).
+- **JWT authentication** with an uppercase `login` + password (short-lived
+  access token + a distinctly-typed refresh token).
+- **Role-based access control**: `ADMIN`, `MANAGER`, `EMPLOYEE` (deny-by-default
+  on the backend + role-gated navbar/routes on the frontend).
+- **Pallets**: catalog with versioning (self-referencing FK) and pricing
+  (buy / production / sell).
+- **Production**: tracks how much each employee produced, with a status workflow
+  (`OPEN → VERIFIED → PAID/CANCELED`); employees only see their own records.
+- **Customers & Orders**: orders with line items (requested vs. produced
+  quantity) and a status workflow.
+- **Reports & payroll** by period/employee.
+- **Soft deletes** on every entity (`deletedAt`).
 
-## Stack
+## Tech Stack
 
-| Camada    | Tecnologias |
-|-----------|-------------|
-| Backend   | NestJS, Prisma 7, PostgreSQL, Passport-JWT, class-validator, Helmet, @nestjs/throttler |
-| Frontend  | Next.js, React, shadcn/ui, Tailwind CSS, react-hook-form, Zod |
-| Infra dev | Docker Compose, npm |
+| Layer       | Technologies |
+|-------------|--------------|
+| Backend     | NestJS, Prisma 7, PostgreSQL, Passport-JWT, class-validator, Helmet, @nestjs/throttler |
+| Frontend    | Next.js, React, shadcn/ui, Tailwind CSS, react-hook-form, Zod |
+| Dev infra   | Docker Compose, npm |
 
-## Estrutura
+## Structure
 
 ```
 .
-├── backend/    # API NestJS (Prisma + PostgreSQL)
+├── backend/    # NestJS API (Prisma + PostgreSQL)
 │   ├── src/
-│   │   ├── auth/        # JWT, guards (JwtAuthGuard global, RoleGuard), strategies
+│   │   ├── auth/        # JWT, guards (global JwtAuthGuard, RoleGuard), strategies
 │   │   ├── core/        # PrismaService
 │   │   ├── modules/     # users, pallets, customers, orders, order-items,
 │   │   │                #   production-history, reports
 │   │   └── shared/      # decorators (@IsPublic, @Roles, @User), exceptions
 │   └── prisma/          # schema + migrations
-└── frontend/   # App Next.js (app router)
+└── frontend/   # Next.js app (app router)
     └── src/
-        ├── app/         # rotas (login + dashboard)
+        ├── app/         # routes (login + dashboard)
         ├── components/  # ui (shadcn), layout, shared
-        ├── services/    # client da API
+        ├── services/    # API client
         ├── contexts/    # auth
         └── hooks/
 ```
 
-## Como rodar (desenvolvimento)
+## Getting Started (development)
 
-### Pré-requisitos
+### Prerequisites
 
 - Node 20+
-- Docker + Docker Compose (para o PostgreSQL)
+- Docker + Docker Compose (for PostgreSQL)
 
 ### Backend
 
 ```bash
 cd backend
-cp .env.example .env          # ajuste os valores (veja abaixo)
+cp .env.example .env          # adjust the values (see below)
 npm install
-docker compose up -d          # sobe PostgreSQL
-npx prisma migrate dev        # aplica migrations
-npx prisma generate           # gera o client (em src/generated/prisma)
-npm run start:dev             # http://localhost:3000  (Swagger em /docs)
+docker compose up -d          # start PostgreSQL
+npx prisma migrate dev        # apply migrations
+npx prisma generate           # generate the client (into src/generated/prisma)
+npm run start:dev             # http://localhost:3000  (Swagger at /docs)
 ```
 
 ### Frontend
@@ -76,45 +75,45 @@ npm run start:dev             # http://localhost:3000  (Swagger em /docs)
 ```bash
 cd frontend
 npm install
-npm run dev                   # http://localhost:3000 (ajuste a porta se necessário)
+npm run dev                   # http://localhost:3000 (adjust the port if needed)
 ```
 
-> Configure `NEXT_PUBLIC_API_URL` apontando para a API.
+> Set `NEXT_PUBLIC_API_URL` to point at the API.
 
-## Variáveis de ambiente (backend)
+## Environment Variables (backend)
 
-Use `backend/.env.example` como base. **Os valores do exemplo são apenas para
-desenvolvimento local — gere segredos próprios em produção** (ex.:
+Use `backend/.env.example` as a starting point. **The example values are for
+local development only — generate your own secrets in production** (e.g.
 `openssl rand -hex 32`).
 
-| Variável              | Descrição                                  |
+| Variable              | Description                                |
 |-----------------------|--------------------------------------------|
-| `PORT`                | Porta da API                               |
-| `DATABASE_URL`        | String de conexão do PostgreSQL            |
-| `JWT_SECRET`          | Segredo para assinar os JWT                |
-| `PWD_PEPPER`          | Pepper aplicado às senhas antes do bcrypt  |
-| `SEED_ADMIN_PASSWORD` | Senha do admin criado pelo seed            |
-| `CORS_ORIGIN`         | Origem(ns) permitida(s) no CORS            |
+| `PORT`                | API port                                   |
+| `DATABASE_URL`        | PostgreSQL connection string               |
+| `JWT_SECRET`          | Secret used to sign JWTs                    |
+| `PWD_PEPPER`          | Pepper applied to passwords before bcrypt   |
+| `SEED_ADMIN_PASSWORD` | Password for the admin created by the seed |
+| `CORS_ORIGIN`         | Allowed CORS origin(s)                      |
 
-## Scripts úteis (backend)
+## Useful Scripts (backend)
 
 ```bash
-npm run start:dev    # dev com hot reload
-npm run build        # compila para dist/
-npm run test         # testes unitários (Jest)
+npm run start:dev    # dev with hot reload
+npm run build        # compile to dist/
+npm run test         # unit tests (Jest)
 npm run lint         # ESLint
-npx prisma studio    # GUI do banco
+npx prisma studio    # database GUI
 ```
 
-## Testes
+## Testing
 
-Os testes ficam ao lado dos arquivos como `*.spec.ts`. Rode `npm run test` em
+Tests live next to their source files as `*.spec.ts`. Run `npm run test` inside
 `backend/`.
 
-## Modelo de domínio
+## Domain Model
 
-- **User** — colaboradores com papéis (ADMIN, MANAGER, EMPLOYEE), identificados por `login`.
-- **Pallet** — tipos de palete com versionamento e custos.
-- **ProductionHistory** — produção por colaborador, com status.
-- **Customer / Order / OrderItem** — clientes e pedidos com seus itens.
-- **ReportTemplate** — modelos de relatório.
+- **User** — employees with roles (ADMIN, MANAGER, EMPLOYEE), identified by `login`.
+- **Pallet** — pallet types with versioning and costs.
+- **ProductionHistory** — per-employee production, with status.
+- **Customer / Order / OrderItem** — customers and orders with their line items.
+- **ReportTemplate** — report templates.
