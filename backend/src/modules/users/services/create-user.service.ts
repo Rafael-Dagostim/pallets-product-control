@@ -13,15 +13,14 @@ export class CreateUserService {
   ) {}
 
   async execute(dto: CreateUserDto): Promise<UserEntity> {
-    const salt = await bcrypt.genSalt();
     const pepper = this.configService.get<string>('PWD_PEPPER', '');
-    const password = await bcrypt.hash(dto.password + pepper, salt);
+    // bcrypt generates and embeds its own salt in the resulting hash.
+    const password = await bcrypt.hash(dto.password + pepper, 10);
 
     const user = await this.prisma.user.create({
       data: {
         ...dto,
         password,
-        salt,
       },
     });
 

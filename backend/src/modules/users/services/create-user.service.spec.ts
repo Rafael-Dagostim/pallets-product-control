@@ -41,7 +41,6 @@ describe('CreateUserService', () => {
 
     expect(prisma.user.create).toHaveBeenCalledTimes(1);
     const callData = prisma.user.create.mock.calls[0][0].data;
-    expect(callData.salt).toBeDefined();
     expect(callData.password).not.toBe('secret');
 
     const isValid = await bcrypt.compare('secret' + pepper, callData.password);

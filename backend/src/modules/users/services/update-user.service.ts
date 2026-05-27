@@ -25,10 +25,9 @@ export class UpdateUserService {
     const data: Record<string, unknown> = { ...dto };
 
     if (dto.password) {
-      const salt = await bcrypt.genSalt();
       const pepper = this.configService.get<string>('PWD_PEPPER', '');
-      data.password = await bcrypt.hash(dto.password + pepper, salt);
-      data.salt = salt;
+      // bcrypt generates and embeds its own salt in the resulting hash.
+      data.password = await bcrypt.hash(dto.password + pepper, 10);
     }
 
     const user = await this.prisma.user.update({

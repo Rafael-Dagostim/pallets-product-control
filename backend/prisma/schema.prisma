@@ -13,7 +13,6 @@ model User {
   name      String    @db.VarChar(100)
   login     String    @unique() @db.VarChar(20)
   password  String
-  salt      String
   role      UserRole
   createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz()

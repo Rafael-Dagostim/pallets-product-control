@@ -15,10 +15,6 @@ export class UserEntity implements User {
   @ApiHideProperty()
   password: string;
 
-  @Exclude()
-  @ApiHideProperty()
-  salt: string;
-
   constructor(partial: Partial<UserEntity>) {
     Object.assign(this, partial);
   }

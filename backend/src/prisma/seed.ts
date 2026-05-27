@@ -21,15 +21,13 @@ async function main() {
     return;
   }
 
-  const salt = await bcrypt.genSalt();
-  const hashedPassword = await bcrypt.hash(adminPassword + pepper, salt);
+  const hashedPassword = await bcrypt.hash(adminPassword + pepper, 10);
 
   const admin = await prisma.user.create({
     data: {
       name: 'Administrador',
       login: adminLogin,
       password: hashedPassword,
-      salt,
       role: 'ADMIN',
     },
   });
