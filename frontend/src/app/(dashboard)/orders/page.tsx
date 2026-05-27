@@ -228,7 +228,7 @@ export default function OrdersPage() {
   const customerOptions = customers.map((c) => ({
     value: c.id,
     label: c.businessName,
-    description: c.corporateName ?? undefined,
+    description: c.additionalInfo ?? undefined,
   }));
 
   const palletOptions = pallets.map((p) => ({

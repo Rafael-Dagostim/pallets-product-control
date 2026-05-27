@@ -3,7 +3,7 @@ import { Customer } from '@generated/prisma';
 export class CustomerEntity implements Customer {
   id: string;
   businessName: string;
-  corporateName: string | null;
+  additionalInfo: string | null;
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;

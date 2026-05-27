@@ -18,7 +18,7 @@ export class AuthService {
 
   async login(dto: LoginDto) {
     const user = await this.prisma.user.findFirst({
-      where: { document: dto.document, deletedAt: null },
+      where: { login: dto.login, deletedAt: null },
     });
 
     if (!user) {

@@ -5,7 +5,7 @@ import { User, UserRole } from '@generated/prisma';
 export class UserEntity implements User {
   id: string;
   name: string;
-  document: string;
+  login: string;
   role: UserRole;
   createdAt: Date;
   updatedAt: Date;

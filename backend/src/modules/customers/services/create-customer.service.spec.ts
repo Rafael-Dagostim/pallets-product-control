@@ -21,7 +21,7 @@ describe('CreateCustomerService', () => {
   });
 
   it('should create a customer and return entity', async () => {
-    const dto = { businessName: 'Acme', corporateName: 'Acme Corp' };
+    const dto = { businessName: 'Acme', additionalInfo: 'Acme Corp' };
     const created = { id: 'c-1', ...dto, createdAt: new Date(), updatedAt: new Date(), deletedAt: null };
     prisma.customer.create.mockResolvedValue(created);
 

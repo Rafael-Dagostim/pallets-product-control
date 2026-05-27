@@ -3,19 +3,19 @@ import { api } from "@/lib/api";
 export interface Customer {
   id: string;
   businessName: string;
-  corporateName: string | null;
+  additionalInfo: string | null;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface CreateCustomerDto {
   businessName: string;
-  corporateName?: string;
+  additionalInfo?: string;
 }
 
 export interface UpdateCustomerDto {
   businessName?: string;
-  corporateName?: string;
+  additionalInfo?: string;
 }
 
 export const customersService = {

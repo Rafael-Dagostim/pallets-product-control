@@ -5,7 +5,7 @@ export type UserRole = "ADMIN" | "MANAGER" | "EMPLOYEE";
 export interface AuthUser {
   id: string;
   name: string;
-  document: string;
+  login: string;
   role: UserRole;
 }
 
@@ -16,9 +16,9 @@ interface LoginResponse {
 }
 
 export const authService = {
-  async login(document: string, password: string): Promise<AuthUser> {
+  async login(loginId: string, password: string): Promise<AuthUser> {
     const data = await api.post<LoginResponse>("/auth/login", {
-      document,
+      login: loginId,
       password,
     });
     setTokens(data.token, data.refresh);

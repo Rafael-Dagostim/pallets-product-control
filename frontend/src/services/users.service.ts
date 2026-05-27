@@ -4,7 +4,7 @@ import type { UserRole } from "./auth.service";
 export interface User {
   id: string;
   name: string;
-  document: string;
+  login: string;
   role: UserRole;
   createdAt: string;
   updatedAt: string;
@@ -12,14 +12,14 @@ export interface User {
 
 export interface CreateUserDto {
   name: string;
-  document: string;
+  login: string;
   password: string;
   role: UserRole;
 }
 
 export interface UpdateUserDto {
   name?: string;
-  document?: string;
+  login?: string;
   password?: string;
   role?: UserRole;
 }

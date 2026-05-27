@@ -23,7 +23,7 @@ describe('UpdateCustomerService', () => {
 
   it('should update and return customer entity', async () => {
     const existing = { id: 'c-1', businessName: 'Old' };
-    const updated = { id: 'c-1', businessName: 'New', corporateName: null, createdAt: new Date(), updatedAt: new Date(), deletedAt: null };
+    const updated = { id: 'c-1', businessName: 'New', additionalInfo: null, createdAt: new Date(), updatedAt: new Date(), deletedAt: null };
     prisma.customer.findFirst.mockResolvedValue(existing);
     prisma.customer.update.mockResolvedValue(updated);
 

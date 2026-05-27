@@ -10,7 +10,7 @@ export class CreateUserDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(20)
-  document: string;
+  login: string;
 
   @IsString()
   @IsNotEmpty()

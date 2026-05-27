@@ -28,7 +28,7 @@ describe('CreateUserService', () => {
   });
 
   it('should hash password with pepper and create user', async () => {
-    const dto = { name: 'John', document: '12345678900', password: 'secret', role: 'EMPLOYEE' as const };
+    const dto = { name: 'John', login: 'JOHN123', password: 'secret', role: 'EMPLOYEE' as const };
     prisma.user.create.mockImplementation(async ({ data }) => ({
       id: 'u-1',
       ...data,

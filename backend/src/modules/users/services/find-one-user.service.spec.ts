@@ -22,7 +22,7 @@ describe('FindOneUserService', () => {
   });
 
   it('should return user entity when found', async () => {
-    const user = { id: 'u-1', name: 'A', document: '111', role: 'ADMIN', password: 'h', salt: 's', createdAt: new Date(), updatedAt: new Date(), deletedAt: null };
+    const user = { id: 'u-1', name: 'A', login: 'AAA111', role: 'ADMIN', password: 'h', createdAt: new Date(), updatedAt: new Date(), deletedAt: null };
     prisma.user.findFirst.mockResolvedValue(user);
 
     const result = await service.execute('u-1');

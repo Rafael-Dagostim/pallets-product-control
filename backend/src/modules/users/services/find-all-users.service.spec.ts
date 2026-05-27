@@ -22,7 +22,7 @@ describe('FindAllUsersService', () => {
 
   it('should return array of user entities filtering soft deletes', async () => {
     const users = [
-      { id: 'u-1', name: 'A', document: '111', role: 'ADMIN', password: 'h', salt: 's', createdAt: new Date(), updatedAt: new Date(), deletedAt: null },
+      { id: 'u-1', name: 'A', login: 'AAA111', role: 'ADMIN', password: 'h', createdAt: new Date(), updatedAt: new Date(), deletedAt: null },
     ];
     prisma.user.findMany.mockResolvedValue(users);
 

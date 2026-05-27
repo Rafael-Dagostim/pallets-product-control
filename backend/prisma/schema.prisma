@@ -11,7 +11,7 @@ datasource db {
 model User {
   id        String    @id @default(ulid())
   name      String    @db.VarChar(100)
-  document  String    @unique() @db.VarChar(20)
+  login     String    @unique() @db.VarChar(20)
   password  String
   salt      String
   role      UserRole
@@ -66,12 +66,12 @@ model ProductionHistory {
 }
 
 model Customer {
-  id            String    @id @default(ulid())
-  businessName  String    @map("business_name")
-  corporateName String?   @map("corporate_name")
-  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz()
-  updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
-  deletedAt     DateTime? @map("deleted_at") @db.Timestamptz()
+  id             String    @id @default(ulid())
+  businessName   String    @map("business_name")
+  additionalInfo String?   @map("additional_info") @db.Text
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
+  deletedAt      DateTime? @map("deleted_at") @db.Timestamptz()
 
   orders Order[]
 

@@ -7,12 +7,12 @@ async function main() {
   const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
   const prisma = new PrismaClient({ adapter });
 
-  const adminDocument = '00000000000';
+  const adminLogin = 'ADMIN';
   const adminPassword = process.env.SEED_ADMIN_PASSWORD || 'admin123';
   const pepper = process.env.PWD_PEPPER || '';
 
   const existing = await prisma.user.findFirst({
-    where: { document: adminDocument },
+    where: { login: adminLogin },
   });
 
   if (existing) {
@@ -27,14 +27,14 @@ async function main() {
   const admin = await prisma.user.create({
     data: {
       name: 'Administrador',
-      document: adminDocument,
+      login: adminLogin,
       password: hashedPassword,
       salt,
       role: 'ADMIN',
     },
   });
 
-  console.log(`Admin user created: ${admin.name} (document: ${admin.document})`);
+  console.log(`Admin user created: ${admin.name} (login: ${admin.login})`);
   await prisma.$disconnect();
 }
 

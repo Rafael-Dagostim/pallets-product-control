@@ -15,7 +15,7 @@ interface AuthContextType {
   user: AuthUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (document: string, password: string) => Promise<void>;
+  login: (loginId: string, password: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -44,7 +44,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser({
           id: payload.userId,
           name: "",
-          document: "",
+          login: "",
           role: payload.role,
         });
       }
@@ -53,8 +53,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = useCallback(
-    async (document: string, password: string) => {
-      const userData = await authService.login(document, password);
+    async (loginId: string, password: string) => {
+      const userData = await authService.login(loginId, password);
       setUser(userData);
       router.push("/production");
     },

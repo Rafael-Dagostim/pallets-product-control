@@ -19,7 +19,7 @@ describe('AuthController', () => {
   });
 
   it('should delegate login to AuthService', async () => {
-    const dto = { document: '12345678900', password: 'pass' };
+    const dto = { login: 'TEST123', password: 'pass' };
     const expected = { token: 'jwt' };
     authService.login.mockResolvedValue(expected);
 

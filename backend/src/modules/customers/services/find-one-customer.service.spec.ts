@@ -22,7 +22,7 @@ describe('FindOneCustomerService', () => {
   });
 
   it('should return customer entity when found', async () => {
-    const customer = { id: 'c-1', businessName: 'A', corporateName: null, createdAt: new Date(), updatedAt: new Date(), deletedAt: null };
+    const customer = { id: 'c-1', businessName: 'A', additionalInfo: null, createdAt: new Date(), updatedAt: new Date(), deletedAt: null };
     prisma.customer.findFirst.mockResolvedValue(customer);
 
     const result = await service.execute('c-1');

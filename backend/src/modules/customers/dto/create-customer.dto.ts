@@ -7,5 +7,5 @@ export class CreateCustomerDto {
 
   @IsOptional()
   @IsString()
-  corporateName?: string;
+  additionalInfo?: string;
 }

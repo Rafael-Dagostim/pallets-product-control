@@ -26,7 +26,7 @@ describe('UpdateOrderService', () => {
     const updated = {
       id: 'o-1', customerId: 'cust-1', status: 'OPEN', deadline: new Date('2025-12-31'),
       createdAt: new Date(), updatedAt: new Date(), deletedAt: null,
-      customer: { id: 'cust-1', businessName: 'A', corporateName: null, createdAt: new Date(), updatedAt: new Date(), deletedAt: null },
+      customer: { id: 'cust-1', businessName: 'A', additionalInfo: null, createdAt: new Date(), updatedAt: new Date(), deletedAt: null },
       items: [],
     };
     prisma.order.update.mockResolvedValue(updated);
@@ -49,7 +49,7 @@ describe('UpdateOrderService', () => {
     prisma.order.update.mockResolvedValue({
       id: 'o-1', customerId: 'cust-1', status: 'DONE', deadline: new Date(),
       createdAt: new Date(), updatedAt: new Date(), deletedAt: null,
-      customer: { id: 'cust-1', businessName: 'A', corporateName: null, createdAt: new Date(), updatedAt: new Date(), deletedAt: null },
+      customer: { id: 'cust-1', businessName: 'A', additionalInfo: null, createdAt: new Date(), updatedAt: new Date(), deletedAt: null },
       items: [],
     });
 

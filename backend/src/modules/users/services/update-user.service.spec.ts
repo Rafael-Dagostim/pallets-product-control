@@ -31,8 +31,8 @@ describe('UpdateUserService', () => {
   it('should update user without re-hashing when no password change', async () => {
     prisma.user.findFirst.mockResolvedValue({ id: 'u-1' });
     prisma.user.update.mockResolvedValue({
-      id: 'u-1', name: 'Updated', document: '111', role: 'ADMIN',
-      password: 'h', salt: 's', createdAt: new Date(), updatedAt: new Date(), deletedAt: null,
+      id: 'u-1', name: 'Updated', login: 'AAA111', role: 'ADMIN',
+      password: 'h', createdAt: new Date(), updatedAt: new Date(), deletedAt: null,
     });
 
     const result = await service.execute('u-1', { name: 'Updated' } as any);
@@ -47,15 +47,14 @@ describe('UpdateUserService', () => {
   it('should re-hash password when password is provided', async () => {
     prisma.user.findFirst.mockResolvedValue({ id: 'u-1' });
     prisma.user.update.mockImplementation(async ({ data }) => ({
-      id: 'u-1', name: 'A', document: '111', role: 'ADMIN',
-      password: data.password, salt: data.salt,
+      id: 'u-1', name: 'A', login: 'AAA111', role: 'ADMIN',
+      password: data.password,
       createdAt: new Date(), updatedAt: new Date(), deletedAt: null,
     }));
 
     await service.execute('u-1', { password: 'newpass' } as any);
 
     const callData = prisma.user.update.mock.calls[0][0].data;
-    expect(callData.salt).toBeDefined();
     const isValid = await bcrypt.compare('newpass' + pepper, callData.password as string);
     expect(isValid).toBe(true);
   });

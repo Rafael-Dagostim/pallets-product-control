@@ -22,8 +22,8 @@ describe('FindAllCustomersService', () => {
 
   it('should return array of customer entities filtering soft deletes', async () => {
     const customers = [
-      { id: 'c-1', businessName: 'A', corporateName: null, createdAt: new Date(), updatedAt: new Date(), deletedAt: null },
-      { id: 'c-2', businessName: 'B', corporateName: null, createdAt: new Date(), updatedAt: new Date(), deletedAt: null },
+      { id: 'c-1', businessName: 'A', additionalInfo: null, createdAt: new Date(), updatedAt: new Date(), deletedAt: null },
+      { id: 'c-2', businessName: 'B', additionalInfo: null, createdAt: new Date(), updatedAt: new Date(), deletedAt: null },
     ];
     prisma.customer.findMany.mockResolvedValue(customers);
 
