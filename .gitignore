@@ -11,6 +11,11 @@ out/
 .env.local
 .env.*.local
 
+# Deploy scripts & docs — contain sensitive infra details (server IP, SSH key,
+# Cloudflare tunnel UUID, ports). Keep local only, never commit.
+deploy.js
+docs/deployment.md
+
 # IDE
 .vscode/
 .idea/
