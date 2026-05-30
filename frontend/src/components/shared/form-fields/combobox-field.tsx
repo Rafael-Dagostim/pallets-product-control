@@ -12,6 +12,7 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useCoarsePointer } from "@/hooks/use-coarse-pointer";
 import { cn } from "@/lib/utils";
 
 export interface ComboboxOption {
@@ -42,6 +43,7 @@ export function ComboboxField({
   className,
 }: ComboboxFieldProps) {
   const [open, setOpen] = React.useState(false);
+  const isCoarse = useCoarsePointer();
   const selected = options.find((o) => o.value === value);
 
   return (
@@ -66,6 +68,9 @@ export function ComboboxField({
       <PopoverContent
         className="w-(--radix-popover-trigger-width) min-w-[240px] p-0"
         align="start"
+        onOpenAutoFocus={(e) => {
+          if (isCoarse) e.preventDefault();
+        }}
       >
         <Command>
           <CommandInput placeholder={searchPlaceholder} />

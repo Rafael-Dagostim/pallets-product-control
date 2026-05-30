@@ -16,6 +16,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useVirtualKeyboard } from "@/hooks/use-virtual-keyboard";
 import { cn } from "@/lib/utils";
 
 type Size = "sm" | "md" | "lg" | "xl";
@@ -50,6 +51,8 @@ export function FormModal({
   mobileSheet = true,
 }: FormModalProps) {
   const [isMobile, setIsMobile] = React.useState(false);
+  const { keyboardHeight, viewportHeight } = useVirtualKeyboard();
+  const contentRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
     if (!mobileSheet) return;
@@ -60,12 +63,35 @@ export function FormModal({
     return () => mq.removeEventListener("change", update);
   }, [mobileSheet]);
 
+  React.useEffect(() => {
+    if (!(mobileSheet && isMobile && open)) return;
+    const root = contentRef.current;
+    if (!root) return;
+    const onFocus = (e: FocusEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+      const tag = target.tagName;
+      if (tag !== "INPUT" && tag !== "TEXTAREA" && tag !== "SELECT") return;
+      window.setTimeout(() => {
+        target.scrollIntoView({ block: "center", behavior: "smooth" });
+      }, 250);
+    };
+    root.addEventListener("focusin", onFocus);
+    return () => root.removeEventListener("focusin", onFocus);
+  }, [mobileSheet, isMobile, open]);
+
   if (mobileSheet && isMobile) {
     return (
       <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
         <SheetContent
           side="bottom"
-          className="max-h-[92vh] rounded-t-2xl p-0 gap-0 flex flex-col"
+          className="rounded-t-2xl p-0 gap-0 flex flex-col"
+          style={{
+            bottom: keyboardHeight,
+            maxHeight: viewportHeight
+              ? `${Math.round(viewportHeight * 0.95)}px`
+              : "92dvh",
+          }}
         >
           <SheetHeader className="px-5 pt-5 pb-3 border-b border-border/40 text-left">
             <SheetTitle className="text-lg font-semibold">{title}</SheetTitle>
@@ -76,7 +102,7 @@ export function FormModal({
             )}
           </SheetHeader>
           <ScrollArea className="flex-1 min-h-0">
-            <div className="px-5 py-5">{children}</div>
+            <div ref={contentRef} className="px-5 py-5">{children}</div>
           </ScrollArea>
         </SheetContent>
       </Sheet>

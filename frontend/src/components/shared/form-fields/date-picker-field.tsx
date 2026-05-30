@@ -7,6 +7,7 @@ import { CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useCoarsePointer } from "@/hooks/use-coarse-pointer";
 import { cn } from "@/lib/utils";
 
 interface DatePickerFieldProps {
@@ -29,6 +30,7 @@ export function DatePickerField({
   className,
 }: DatePickerFieldProps) {
   const [open, setOpen] = React.useState(false);
+  const isCoarse = useCoarsePointer();
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -49,7 +51,13 @@ export function DatePickerField({
             : placeholder}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="start">
+      <PopoverContent
+        className="w-auto p-0"
+        align="start"
+        onOpenAutoFocus={(e) => {
+          if (isCoarse) e.preventDefault();
+        }}
+      >
         <Calendar
           mode="single"
           locale={ptBR}
